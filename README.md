@@ -10,3 +10,5 @@ Repositorio privado con el skill y las herramientas del equipo de avisos.
 Para claude.ai, el skill se empaqueta como `diario-informaciones.skill` (zip con la carpeta `diario-informaciones/`).
 
 No subir `credentials.json`, `token.json` ni `datos_pago.json` (ver `.gitignore`).
+
+Última actualización: 19/11/2026.

@@ -1,0 +1,25 @@
+{
+  "_nota": "Datos operativos del diario. Los marcados PENDIENTE hay que confirmarlos con el equipo.",
+  "dias_sin_edicion": [],
+  "_dias_sin_edicion_ayuda": "PENDIENTE. Numeros de dia de la semana sin diario: 0=lunes ... 6=domingo. Ej: [6] si no sale el domingo.",
+  "feriados_sin_edicion": [],
+  "_feriados_ayuda": "PENDIENTE. Fechas YYYY-MM-DD sin edicion.",
+  "hora_cierre": "14:00",
+  "_hora_cierre_ayuda": "PENDIENTE confirmar. Despues de esta hora, la primera edicion posible es pasado manana.",
+  "plazos": {
+    "sa_primera": {
+      "publicaciones": 5,
+      "min_dias_desde_ultima": 10,
+      "max_dias_desde_primera": 30
+    },
+    "sa_segunda": {
+      "publicaciones": 3,
+      "min_dias_desde_ultima": 8,
+      "max_dias_desde_primera": null
+    }
+  },
+  "lugar_desde": null,
+  "_lugar_desde_ayuda": "Lo actualiza el equipo: primera fecha con cupo (YYYY-MM-DD). Ej: 2026-11-09. null = desde la proxima edicion.",
+  "criterio_anticipacion": "conservador",
+  "_criterio_ayuda": "conservador: la ULTIMA publicacion a >=10 dias de la asamblea. resolucion: la PRIMERA publicacion a >=10 dias (Res. DGPEJBF 03/2022). Lo define el asesor juridico."
+}

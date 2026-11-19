@@ -1,0 +1,102 @@
+<title>Tablero de Pendientes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: tablero de columnas por urgencia; cada pendiente es una tarjeta con franja de color y botón SOLUCIONADO */
+:root{--bg:#f3f5f4;--card:#ffffff;--fg:#1c2422;--muted:#5b6865;--line:#d9dfdd;--brand:#0f3b3d;--urg:#c8361f;--hoy:#b07a00;--sem:#2d6fa8;--ok:#1d7a45;--okbg:#e3efe6;
+--display:"Space Grotesk",system-ui,sans-serif;--body:Inter,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111716;--card:#1a2220;--fg:#e6ecea;--muted:#9aa8a4;--line:#2c3734;--brand:#7cc4c6;--urg:#ff7a63;--hoy:#e6b54a;--sem:#79b2e6;--ok:#5fcf8c;--okbg:#18322a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111716;--card:#1a2220;--fg:#e6ecea;--muted:#9aa8a4;--line:#2c3734;--brand:#7cc4c6;--urg:#ff7a63;--hoy:#e6b54a;--sem:#79b2e6;--ok:#5fcf8c;--okbg:#18322a;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--body)}
+.wrap{max-width:1200px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{font:700 26px var(--display);color:var(--brand);margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font:600 12px var(--body);padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:6px;margin:0 0 14px}
+.tabs button{font:600 13px var(--body);padding:7px 12px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--brand);color:var(--bg);border-color:var(--brand)}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start}
+.col h2{font:700 13px var(--display);letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px;display:flex;gap:8px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card.done{opacity:.6;border-left-color:var(--ok)}
+.card h3{font:600 15px var(--body);margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted)}
+.tag{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.det{margin:0;white-space:pre-line}
+.acc{margin:0;font-size:13px}.acc b{color:var(--brand)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.btn{font:600 13px var(--body);padding:7px 12px;border-radius:6px;border:1px solid var(--ok);background:var(--ok);color:#fff;cursor:pointer}
+.btn.no{background:var(--urg);border-color:var(--urg)}
+.btn.sec{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn:focus-visible,.tabs button:focus-visible,a:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+a{color:var(--brand)}
+.okmark{font:600 12px var(--body);color:var(--ok);background:var(--okbg);padding:2px 8px;border-radius:4px}
+.empty{color:var(--muted);border:1px dashed var(--line);border-radius:6px;padding:14px;text-align:center}
+.state{color:var(--muted);margin:24px 0;text-align:center}
+@media (prefers-reduced-motion:no-preference){.card{transition:opacity .2s}}
+</style>
+<div class="wrap">
+<header>
+ <div><h1>Tablero de Pendientes</h1><p class="sub">Diario Informaciones · lo que hay que revisar o resolver. Marcá cada bloque como SOLUCIONADO.</p></div>
+ <div class="stats" id="stats"></div>
+</header>
+<div class="tabs" role="group" aria-label="Filtro">
+ <button id="t-abiertos" aria-pressed="true">Abiertos</button>
+ <button id="t-solucionados" aria-pressed="false">Solucionados</button>
+</div>
+<p class="state" id="state">Cargando pendientes…</p>
+<div class="board" id="board" hidden></div>
+</div>
+<script>
+const COLS=[["urgente","Urgente","--urg"],["hoy","Hoy","--hoy"],["semana","Esta semana","--sem"]];
+let rows=[],filtro="abiertos",db=null,me=null;
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function fmt(iso){try{return new Date(iso).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}catch(e){return""}}
+function render(){
+ const ab=rows.filter(r=>!r.solucionado),so=rows.filter(r=>r.solucionado);
+ $("stats").innerHTML=`<span class="pill">${ab.length} abiertos</span><span class="pill">${ab.filter(r=>r.prioridad==="urgente").length} urgentes</span><span class="pill">${so.length} solucionados</span>`;
+ const ver=filtro==="abiertos"?ab:so;
+ $("board").innerHTML=COLS.map(([k,n,c])=>{
+  const items=ver.filter(r=>(r.prioridad||"semana")===k).sort((a,b)=>(a.creado||"").localeCompare(b.creado||""));
+  return `<section class="col"><h2><span class="dot" style="background:var(${c})"></span>${n} · ${items.length}</h2><div class="list">${
+   items.length?items.map(r=>card(r,c)).join(""):`<div class="empty">${filtro==="abiertos"?"Nada pendiente acá.":"Nada solucionado todavía."}</div>`}</div></section>`}).join("");
+ $("board").hidden=false;$("state").hidden=true;
+}
+function card(r,c){
+ return `<article class="card${r.solucionado?" done":""}" style="--c:var(${c})">
+ <h3>${esc(r.titulo)}</h3>
+ <div class="meta">${r.cliente?`<span class="tag">${esc(r.cliente)}</span>`:""}${r.codigo?`<span class="tag">${esc(r.codigo)}</span>`:""}${r.vence?`<span class="tag">Vence ${esc(r.vence)}</span>`:""}</div>
+ <p class="det">${esc(r.detalle)}</p>
+ ${r.accion?`<p class="acc"><b>Qué hacer:</b> ${esc(r.accion)}</p>`:""}
+ <div class="row">
+ ${r.gmail?`<a href="${esc(r.gmail)}" target="_blank" rel="noopener">Abrir correo</a>`:""}
+ ${r.solucionado?`<span class="okmark">${r.resultado==="no_llego"?"✘ Pago NO llegó":r.resultado==="verificado"?"✔ Pago verificado":"✔ Solucionado"} ${fmt(r.solucionado_en)}</span><button class="btn sec" data-re="${esc(r.id)}">Reabrir</button>`
+  :r.tipo==="verificar_pago"?`<button class="btn" data-pv="${esc(r.id)}">✔ PAGO FUE VERIFICADO</button><button class="btn no" data-pn="${esc(r.id)}">✘ NO LLEGÓ EL PAGO</button>`
+  :`<button class="btn" data-ok="${esc(r.id)}">SOLUCIONADO</button>`}
+ </div></article>`;
+}
+$("board").addEventListener("click",async e=>{
+ const pv=e.target.closest("[data-pv]"),pn=e.target.closest("[data-pn]");
+ if((pv||pn)&&db){const b=pv||pn;b.disabled=true;try{await db.doc("pendientes/"+(pv?pv.dataset.pv:pn.dataset.pn)).update({solucionado:true,resultado:pv?"verificado":"no_llego",solucionado_en:new Date().toISOString(),solucionado_por:me})}catch(err){b.disabled=false;b.textContent="No se pudo guardar. Probá de nuevo"}return}
+ const ok=e.target.closest("[data-ok]"),re=e.target.closest("[data-re]");
+ const id=(ok||re)?.dataset.ok||(ok||re)?.dataset.re; if(!id||!db)return;
+ const b=ok||re;b.disabled=true;
+ try{await db.doc("pendientes/"+id).update(ok?{solucionado:true,solucionado_en:new Date().toISOString(),solucionado_por:me}:{solucionado:false,solucionado_en:null,resultado:null});}
+ catch(err){b.disabled=false;b.textContent="No se pudo guardar. Probá de nuevo";}
+});
+for(const k of ["abiertos","solucionados"])$("t-"+k).addEventListener("click",()=>{filtro=k;for(const j of ["abiertos","solucionados"])$("t-"+j).setAttribute("aria-pressed",j===k);render()});
+(async()=>{
+ const t=setTimeout(()=>{$("state").textContent="No se pudo cargar el tablero. Abrilo de nuevo con tu cuenta de claude.ai."},10000);
+ db=await window.claude?.use?.("db");
+ if(!db){clearTimeout(t);$("state").textContent="Entrá con tu cuenta de claude.ai para ver y marcar los pendientes.";return}
+ try{const u=await window.claude.use("user");me=u?await u.id():null}catch(e){}
+ db.collection("pendientes").onSnapshot(s=>{clearTimeout(t);rows=s.docs.map(d=>({id:d.id,...d.data()}));
+  if(!rows.length){$("state").textContent="No hay pendientes cargados todavía. Claude los agrega en cada revisión.";$("state").hidden=false;$("board").hidden=true;return}
+  render()},()=>{clearTimeout(t);$("state").textContent="Se cortó la conexión con el tablero. Recargá la página."});
+})();
+</script>

@@ -1,0 +1,8 @@
+# Nunca subir credenciales ni datos reales
+credentials.json
+token.json
+datos_pago.json
+*.env
+.env*
+__pycache__/
+*.pyc

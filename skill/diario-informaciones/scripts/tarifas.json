@@ -1,0 +1,69 @@
+{
+  "vigencia": "2026-11-06",
+  "fuente": "Lista de precios Diario Informaciones (Editorial Informaciones S.R.L.), recibida el 6/11/2026",
+  "moneda": "Gs.",
+  "asamblea_5_dias": {
+    "1-5": 150000,
+    "6": 160000,
+    "7": 170000,
+    "8": 180000,
+    "9": 190000,
+    "10": 220000,
+    "11": 240000,
+    "12": 250000,
+    "13": 270000
+  },
+  "asamblea_3_dias": {
+    "1-5": 140000,
+    "6": 150000,
+    "7": 160000,
+    "8": 170000
+  },
+  "columna": {
+    "mas_media_1_dia": 100000,
+    "una_1_dia": 120000,
+    "mas_una_1_dia": 130000,
+    "media_5_dias": 270000,
+    "una_5_dias": 320000
+  },
+  "constitucion": {
+    "base_hasta_8_lineas": 140000,
+    "extra_cada_3_lineas": 10000,
+    "dias": 3
+  },
+  "modificacion_estatuto": {
+    "base_hasta_8_lineas": 140000,
+    "extra_cada_3_lineas": 10000,
+    "dias": 3
+  },
+  "edicto_extravio": {
+    "por_publicacion": 100000,
+    "dias": 1
+  },
+  "marca_registro": {
+    "por_expediente_con_logo": 35000,
+    "por_expediente_sin_logo": 25000,
+    "por_logo": 25000,
+    "dias": 3
+  },
+  "marca_renovacion": {
+    "por_expediente_con_logo": 30000,
+    "por_expediente_sin_logo": 22000,
+    "por_logo": 25000,
+    "dias": 1
+  },
+  "marca_transferencia": {
+    "por_expediente": 30000,
+    "dias": 1
+  },
+  "derecho_autor": {
+    "1-4": 44000,
+    "5-8": 55000,
+    "mas_de_8": 85000,
+    "dias": 3
+  },
+  "licencia_uso": {
+    "dias": 1,
+    "por_expediente": 88000
+  }
+}

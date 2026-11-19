@@ -1,0 +1,7 @@
+google-api-python-client
+google-auth-oauthlib
+python-docx
+pdfplumber
+pillow
+pillow-heif
+anthropic

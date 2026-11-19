@@ -1,0 +1,300 @@
+<title>Pool de Espacios</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Una sola vista: calendario semanal; cada día muestra cantidad de avisos y se pinta según cuánto se llenó */
+:root{--bg:#f3f5f4;--card:#fff;--fg:#1c2422;--muted:#5b6865;--line:#d6dddb;--accent:#0f5f63;
+--ok:#2e6b3a;--warn:#8a5a00;--crit:#a3302a;--off:#6b6f75;
+--fill-ok:rgba(34,160,70,.30);--fill-casi:rgba(245,180,0,.50);--fill-lleno:rgba(220,40,40,.42);--fill-off:repeating-linear-gradient(45deg,rgba(110,115,120,.45) 0 6px,rgba(110,115,120,.25) 6px 12px);
+--serif:Georgia,"Times New Roman",serif;--sans:"Segoe UI",Arial,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121817;--card:#1a2220;--fg:#e3eae8;--muted:#9aa7a3;--line:#2c3734;--accent:#6cc3c6;--ok:#86c792;--warn:#e3b45b;--crit:#f08a80;--off:#a0a5ab;--fill-ok:rgba(60,200,100,.38);--fill-casi:rgba(255,190,30,.55);--fill-lleno:rgba(255,70,70,.55);--fill-off:repeating-linear-gradient(45deg,rgba(170,175,180,.40) 0 6px,rgba(170,175,180,.18) 6px 12px);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121817;--card:#1a2220;--fg:#e3eae8;--muted:#9aa7a3;--line:#2c3734;--accent:#6cc3c6;--ok:#86c792;--warn:#e3b45b;--crit:#f08a80;--off:#a0a5ab;--fill-ok:rgba(60,200,100,.38);--fill-casi:rgba(255,190,30,.55);--fill-lleno:rgba(255,70,70,.55);--fill-off:repeating-linear-gradient(45deg,rgba(170,175,180,.40) 0 6px,rgba(170,175,180,.18) 6px 12px);color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);margin:0}
+.wrap{max-width:1100px;margin:0 auto;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font:bold clamp(1.6rem,4vw,2.1rem)/1.15 var(--serif);margin:0}
+.sub{color:var(--muted);margin:6px 0 18px;max-width:70ch}
+.prox{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 18px}.prox>div{background:var(--card);border:1px solid var(--line);padding:10px 14px;flex:1 1 200px;min-width:0}.prox small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.prox b{font:bold 1.1rem var(--serif)}
+.pend{font-size:11px;color:var(--warn);font-weight:600}.conf{font-size:11px;color:var(--crit);font-weight:700}
+.tipos{font-size:11px;color:var(--fg)}
+.nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.nav b{font:bold 1rem var(--serif);min-width:0}
+button{font:600 13px var(--sans);border:1px solid var(--line);background:var(--card);color:var(--fg);padding:5px 10px;border-radius:3px;cursor:pointer}
+button:hover{border-color:var(--accent)} button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px} button:disabled{opacity:.45;cursor:not-allowed}
+#modoDis{margin-left:auto} #modoDis[aria-pressed="true"]{background:var(--warn);color:var(--bg);border-color:var(--warn)}
+select{font:14px var(--sans);padding:5px 8px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:3px}
+.leyenda{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:0 0 10px}
+.sw{display:inline-block;width:18px;height:18px;border:1px solid var(--fg);border-radius:3px;margin-right:5px;vertical-align:-2px}
+#ayuda{font-size:13px;background:var(--fill-casi);padding:8px 12px;margin:0 0 10px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.dow{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center}
+.dia{background:var(--card);border:1px solid var(--line);padding:8px;min-width:0;min-height:118px;display:flex;flex-direction:column;gap:2px}
+.dia.pasado{opacity:.45} .dia.hoy{outline:3px solid var(--accent);outline-offset:-1px}
+.f{display:flex;justify-content:space-between;align-items:baseline;gap:4px}
+.n{font:bold 1.1rem var(--serif)} .m{font-size:11px;color:var(--muted)}
+.cant{font:bold 2rem/1 var(--serif);font-variant-numeric:tabular-nums;margin-top:6px}
+.cant small{font:12px var(--sans);color:var(--muted)}
+.est{font:bold 10px var(--sans);letter-spacing:.06em;text-transform:uppercase}
+.est.cerrado{color:var(--off)} .est.lleno{color:var(--crit)} .est.casi{color:var(--warn)} .est.ok{color:var(--ok)}
+.hoytag{font:bold 10px var(--sans);letter-spacing:.06em;background:var(--accent);color:var(--bg);padding:1px 6px;border-radius:3px;align-self:flex-start}
+.ctl{display:flex;gap:4px;margin-top:auto;flex-wrap:wrap}
+.ctl button{padding:3px 7px;font-size:12px;width:100%}
+.ctl button.abrir{border-color:var(--accent);color:var(--accent);font-weight:700}
+.pag-ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;overflow:auto;padding:24px 16px}
+.pag{background:#f6f1e3;color:#1b1b1b;max-width:1300px;margin:0 auto;padding:18px 22px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.pag-top{position:relative;border-bottom:3px double #1b1b1b;padding-bottom:8px;margin-bottom:12px;text-align:center}
+.pag-x{position:absolute;right:0;top:0;background:#1b1b1b;color:#fff;border:0;font-size:16px;padding:4px 10px}
+.pag-mast{font:900 clamp(1.6rem,4vw,2.6rem)/1 var(--serif);letter-spacing:.02em}
+.pag-fecha{font:12px var(--sans);text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+.pag-hint{font:11px var(--sans);color:#666;margin-top:4px}
+.pag-cols{column-width:230px;column-gap:14px;column-rule:1px solid #bdb5a0}
+.pag-av{break-inside:avoid;border:1px solid #1b1b1b;background:#fffdf6;padding:8px 10px;margin:0 0 12px;cursor:grab}
+.pag-av.est{border:2px solid #c62828}
+.pag-av{position:relative}
+.pag-mk{position:absolute;inset:0;pointer-events:none;opacity:.78;mix-blend-mode:multiply}
+.pag-ley .nv{color:#1e88e5;font-size:16px}
+.sin-graf .pag-mk,.sin-graf .pag-ley{display:none}
+.pag-tg{position:absolute;left:0;top:0;background:#fff;color:#1b1b1b;border:2px solid #1b1b1b;font:800 12px var(--sans);padding:5px 10px}
+.pag-mk svg{width:100%;height:100%;display:block}
+.pag-mk path{fill:none;stroke-width:9;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;stroke-width:16px;filter:url(#crayon)}
+.pag-ley{font:700 13px var(--sans);margin-top:6px}.pag-ley .r0{color:#d32f2f}.pag-ley .r1,.pag-ley .r2{color:#1565c0;font-size:16px}
+.pag-av.drag{opacity:.4}
+.pag-tipo{font:800 10px var(--sans);letter-spacing:.08em;color:#555}
+.pag-av.est .pag-tipo{color:#c62828}
+.pag-nom{font:800 15px/1.2 var(--serif);margin:3px 0;text-transform:uppercase}
+.pag-est{display:inline-block;font:700 10px var(--sans);padding:1px 6px;border-radius:2px;background:#ddd}
+.pag-est.confirmada{background:#2e6b3a;color:#fff}.pag-est.sin_pago{background:#d6a21e}.pag-est.pago_informado{background:#e3b45b}
+.pag-txt{font:12px/1.45 Georgia,serif;margin-top:6px;text-align:justify}
+.pag-cod{font:10px monospace;color:#777;margin-top:4px}
+.pag-dia{display:inline-block;font:800 10px var(--sans);letter-spacing:.06em;background:#1b1b1b;color:#fff;padding:1px 6px;margin-top:3px}.pag-dia.sigue{background:#0f5f63}
+.pag-plazo{font:700 10px var(--sans);color:#2e6b3a;margin-top:4px}.pag-ojo{background:#c62828;color:#fff;font:700 11px/1.35 var(--sans);padding:6px 8px;margin:4px 0;border-radius:3px}.pag-ojo a{color:#fff;text-decoration:underline}.pag-plazo.justo{color:#a46a00}.pag-plazo.mal{color:#c62828}
+.pag-ver{display:block;text-align:center;margin-top:6px;font:800 11px var(--sans);letter-spacing:.04em;color:#fff;background:#0f3b3d;padding:5px;text-decoration:none;position:relative;z-index:2}
+.pag-ver:hover{background:#0f5f63}
+.pag-frame{width:100%;height:72vh;border:1px solid #1b1b1b;background:#fff;margin-bottom:10px}
+.pag-ext{display:inline-block;margin-top:6px;font:700 12px var(--sans);color:#0f5f63}
+.pag-pre{white-space:pre-wrap;font:14px/1.6 Georgia,serif;background:#fffdf6;border:1px solid #1b1b1b;padding:14px;max-height:65vh;overflow:auto;text-align:justify}
+.pag-mv{display:flex;gap:4px;margin-top:6px}.pag-mv button{flex:1;font:600 10px var(--sans);padding:3px 4px;background:#fff;color:#1b1b1b;border:1px solid #1b1b1b}
+.ctl button[data-cerrado="no"]{border-color:var(--crit);color:var(--crit);font-weight:700}
+.estudio{display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;background:#c62828;color:#fff;font:800 11px var(--sans);letter-spacing:.04em;text-transform:uppercase;padding:4px 6px;border-radius:3px;margin:3px 0}
+.estudio.ok{background:var(--ok);color:var(--bg)}
+.estudio button{padding:1px 6px;font-size:10px;background:#fff;color:#c62828;border-color:#fff}
+.estudio.ok button{color:var(--ok)}
+.nombres{font-size:11px;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#aviso{margin-top:12px;font-size:13px;color:var(--muted)}
+@media (max-width:700px){.cal{gap:3px}.dia{padding:5px;min-height:104px}.cant{font-size:1.5rem}.dow{font-size:10px}.ctl button{padding:2px 5px}}
+
+/* Página del día con el estilo del Diario Informaciones impreso (InDesign 31/10/2026): A3, 5 columnas, Times / New Century Schoolbook / Arial Narrow */
+.pag.diario{background:#fff;color:#111;max-width:1120px;aspect-ratio:auto;padding:26px 30px 34px;font-family:"Times New Roman",Times,serif}
+.diario .pag-top{border:0;margin-bottom:0;padding-bottom:0;padding-top:46px}
+.diario .pag-tg{left:auto;right:56px;top:0}
+.diario .pag-fin{position:absolute;right:220px;top:0;background:#fff;color:#1b1b1b;border:2px solid #1b1b1b;font:800 12px var(--sans);padding:5px 10px}
+.diario.final .pag-herr,.diario.final .pag-ver,.diario.final .pag-mv,.diario.final .pag-plazo,.diario.final .pag-ojo,.diario.final .pag-hint,.diario.final .pag-mk,.diario.final .pag-ley,.diario.final .pag-meta,.diario.final .pag-tg{display:none!important}
+.diario.final .pag-av{cursor:default}.diario.final .pag-av.est{box-shadow:none;padding-left:1px}
+.diario.final .pag-tipo{color:#111!important}
+.diario .d-mast{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:4px solid #111;padding-bottom:2px;margin-top:6px}
+.diario .d-mast b{font:400 clamp(2rem,5vw,3.6rem)/1 "Arial Narrow","Archivo Narrow",Arial,sans-serif;letter-spacing:-.01em}
+.diario .d-mast b span{font-weight:900;font-family:"Arial Black","Archivo Black","Arial Narrow",Arial,sans-serif;letter-spacing:.01em}
+.diario .d-sub{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;border-bottom:1px solid #111;font:700 11px "Arial Narrow","Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em;padding:3px 0;margin-bottom:12px}
+.diario .pag-cols{column-count:5;column-gap:12px;column-rule:.5px solid #111;column-width:auto}
+@media (max-width:900px){.diario .pag-cols{column-count:3}}
+@media (max-width:560px){.diario .pag-cols{column-count:2}}
+.diario .pag-av{background:#fff;border:0;border-bottom:.5px solid #111;padding:6px 1px 8px;margin:0 0 6px}
+.diario .pag-av.est{border:0;border-bottom:.5px solid #111;box-shadow:inset 3px 0 0 #c62828;padding-left:6px}
+.diario .pag-tipo{font:700 12px/1.15 "New Century Schoolbook","Century Schoolbook","TeX Gyre Schola",Georgia,serif;color:#111;text-align:center;letter-spacing:0;text-transform:uppercase}
+.diario .pag-nom{font:700 13px/1.15 "New Century Schoolbook","Century Schoolbook","TeX Gyre Schola",Georgia,serif;text-align:center;margin:2px 0 4px}
+.diario .pag-txt{font:10.5px/1.25 "Times New Roman",Times,serif;text-align:justify;hyphens:auto;margin-top:2px}
+.diario .pag-cuerpo{white-space:pre-line;display:block}
+.diario .pag-dia,.diario .pag-est,.diario .pag-cod,.diario .pag-plazo{font-family:"Arial Narrow",Arial,sans-serif}
+.diario .pag-herr{display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin-top:5px;padding-top:4px;border-top:1px dotted #999}
+.diario .pag-ver{font-size:10px;padding:3px;margin-top:3px}
+.diario .pag-mv button{font-size:9px}
+.diario .pag-ley,.diario .pag-hint{font-family:Arial,sans-serif}
+</style>
+
+<div class="wrap">
+<h1>Pool de espacios del diario</h1>
+<p class="sub">Los avisos se cargan al recibirlos y ocupan sus días de publicación (asamblea 5, marca 3, renovación 1…). El único que cambia el pool es el diseñador: cuando un día ya no admite más avisos, lo marca <b>CERRADO</b>.</p>
+<div class="prox"><div><small>Próxima asamblea (5 días) desde</small><b id="p5">—</b></div><div><small>Próximo registro de marca (3 días) desde</small><b id="p3">—</b></div><div><small>Próximo aviso de 1 día</small><b id="p1">—</b></div></div>
+<div class="nav">
+  <button id="ant" aria-label="Semana anterior">◀</button><b id="lbl"></b><button id="sig" aria-label="Semana siguiente">▶</button><button id="hoy">Hoy</button>
+  <select id="ver" aria-label="Semanas a mostrar"><option value="1">1 semana</option><option value="2" selected>2 semanas</option><option value="4">4 semanas</option></select>
+</div>
+<div class="leyenda"><span><i class="sw" style="background:var(--fill-ok)"></i>abierto: el número es la cantidad de lugares ocupados; el color se va llenando sobre un promedio de ~40 lugares por día (asambleas o marcas)</span><span><i class="sw" style="background:var(--fill-casi)"></i>casi lleno (30 o más)</span><span><i class="sw" style="background:var(--fill-lleno)"></i>40 o más: revisar si se cierra</span><span><i class="sw" style="background:var(--fill-off)"></i>cerrado por el diseñador: no entran avisos nuevos</span><span><i class="sw" style="background:#c62828"></i><b style="color:#c62828">BERKE / STEWART</b>: estudio con estado de cuenta, con prioridad. Hay que descargar los adjuntos del correo y preparar la publicación (tocar "Listo" al terminar)</span><span>Los <b>domingos</b> aparecen CERRADOS por defecto: no se toman publicaciones nuevas (las que ya están corriendo siguen saliendo). Las publicaciones no arrancan en domingo (ni en sábado en temporada baja). Solo los avisos <b>pagados</b> tienen la fecha garantizada. Al cerrar un día, los <b>sin pago</b> se corren a la próxima fecha y Claude le avisa al cliente.</span></div>
+<div id="ayuda">Diseñador: tocá <b>CERRAR</b> en el día que ya no admite más avisos. Los avisos ya cargados ese día se mantienen; los nuevos pasan al siguiente día abierto.</div>
+<div class="cal" id="cal"></div>
+<div id="aviso">Conectando…</div>
+<section id="pres" style="margin-top:26px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent);padding:14px 16px"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><h2 style="font:bold 1.25rem var(--serif);margin:0">Avisos presenciales</h2><button id="btnPres" aria-label="Cargar aviso presencial" title="Cargar aviso presencial" style="width:48px;height:48px;border-radius:50%;border:0;background:var(--accent);color:var(--bg);font:700 30px/1 var(--sans);padding:0">+</button></div>
+<p class="sub" style="margin:6px 0 10px">El cliente vino con su aviso en mano: se verificaron los datos, se facturó, pagó en efectivo o por transferencia y se escaneó. Hugo o el diseñador lo cargan acá para que ocupe su lugar en el día y Claude no ofrezca ese espacio a otro cliente. Igual, la palabra final la tiene el cierre del diario.</p>
+<div id="preslista" style="display:flex;flex-direction:column;gap:6px"><div class="m">Todavía no hay avisos presenciales cargados.</div></div></section>
+<section id="rev" style="margin-top:26px"><h2 style="font:bold 1.25rem var(--serif);margin:0 0 4px">Revisión de la mañana</h2>
+<p class="sub" style="margin:0 0 10px">Lo que Claude envió solo fuera de horario (desde las 14:00 del día hábil anterior). Revisá cada envío y marcá <b>Bien</b> o <b>Corregir</b>; en lo que hay que corregir, anotá qué falló para que Claude aprenda.</p>
+<div id="revlista" style="display:flex;flex-direction:column;gap:6px"><div class="m">Sin envíos automáticos todavía.</div></div></section>
+</div>
+
+<script>
+const DIAS=["dom","lun","mar","mié","jue","vie","sáb"],MES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+let db=null,puede=true,off=0,ver=2,dis=false,cfg={capacidad_defecto:40,hora_cierre:14},dias={},avisos=[];
+const hoy0=()=>{const h=new Date();h.setHours(0,0,0,0);return h};
+const nombresDe=f=>avisos.filter(a=>a.estado!=="liberada"&&(a.fechas||[]).includes(f)).map(a=>a.cliente);
+const delDia=f=>avisos.filter(a=>a.estado!=="liberada"&&(a.fechas||[]).includes(f));
+const cantidad=f=>delDia(f).length;
+const cerrado=f=>!!(dias[f]&&dias[f].cerrado);
+// Eddy 13/11/2026: los domingos no se toman publicaciones -> CERRADO por defecto (el diseñador puede reabrir).
+const esDomingo=f=>new Date(f+"T12:00:00").getDay()===0;
+const cerradoDia=f=>(dias[f]&&dias[f].cerrado!==undefined)?!!dias[f].cerrado:esDomingo(f);
+// Reglas de Luzana: no se inicia en domingo; en temporada baja tampoco en sábado; el espacio se controla hasta 3 días
+const puedeIniciar=d=>(d.getDay()!==0||(dias[iso(d)]&&dias[iso(d)].cerrado===false))&&!(cfg.temporada_baja!==false&&d.getDay()===6);
+function primeraEdicion(){const a=new Date();let d=add(hoy0(),1);if(a.getHours()>=(cfg.hora_cierre||14))d=add(d,1);while(!puedeIniciar(d))d=add(d,1);return d}
+function desde(n){let d=primeraEdicion();const ctl=Math.min(n,cfg.dias_control||3);for(let i=0;i<180;i++,d=add(d,1)){if(!puedeIniciar(d))continue;let ok=true;for(let k=0;k<ctl;k++)if(cerrado(iso(add(d,k)))){ok=false;break}if(ok)return d}return null}
+const LBL={otro:"otro",asamblea:"asamblea",marca:"marca",marca_registro:"marca",marca_renovacion:"renovación",marca_transferencia:"transferencia",edicto:"edicto",sociedad:"estatuto/constitución",derecho_autor:"derecho de autor"};
+const corta=d=>d?DIAS[d.getDay()]+" "+d.getDate()+" de "+MES[d.getMonth()]:"sin lugar";
+const aviso=t=>document.getElementById("aviso").textContent=t;
+function render(){
+  const hoy=hoy0(),lunes=add(add(hoy,-((hoy.getDay()+6)%7)),7*off),fin=add(lunes,7*ver-1);
+  document.getElementById("p5").textContent=corta(desde(5));document.getElementById("p3").textContent=corta(desde(3));document.getElementById("p1").textContent=corta(desde(1));
+  const cap=cfg.capacidad_ref||40;
+  document.getElementById("lbl").textContent="del "+lunes.getDate()+" de "+MES[lunes.getMonth()]+" al "+fin.getDate()+" de "+MES[fin.getMonth()];
+  const cal=document.getElementById("cal");cal.innerHTML="";
+  ["lun","mar","mié","jue","vie","sáb","dom"].forEach(x=>{const e=document.createElement("div");e.className="dow";e.textContent=x;cal.appendChild(e)});
+  for(let i=0;i<7*ver;i++){
+    const d=add(lunes,i),f=iso(d),c=cantidad(f),cerr=cerradoDia(f),pas=d<hoy,esHoy=+d===+hoy;
+    const est=cerr?"cerrado":c>=cap?"lleno":c>=cap*.75?"casi":"ok",pct=cerr?100:Math.min(100,Math.round(c*100/cap));
+    const el=document.createElement("div");el.className="dia"+(pas?" pasado":"")+(esHoy?" hoy":"");
+    el.style.background=cerr?"var(--fill-off), var(--card)":`linear-gradient(to top, var(--fill-${est}) ${pct}%, var(--card) ${pct}%)`;if(!cerr&&c)el.style.borderColor=`var(--${est==="lleno"?"crit":est==="casi"?"warn":"ok"})`;
+    const nom=nombresDe(f),EST={sin_pago:"sin pago",pago_informado:"pago a verificar",confirmada:"pagado"};el.title=delDia(f).length?delDia(f).map(a=>"• "+a.cliente+" ("+(a.estudio?"estudio · estado de cuenta mensual":(EST[a.estado]||a.estado))+")").join("\n"):"Sin avisos cargados";
+    el.innerHTML=`<div class="f"><span class="n">${d.getDate()}</span><span class="m">${DIAS[d.getDay()]} · ${MES[d.getMonth()].slice(0,3)}</span></div>
+      ${esHoy?'<span class="hoytag">HOY</span>':''}<span class="est ${est}">${cerr?"Cerrado":est==="lleno"?"Abierto · ¿cerrar?":est==="casi"?"Abierto · casi lleno":"Abierto"}</span>
+      <div class="cant">${c}<small> ${c===1?"lugar":"lugares"}</small></div><div class="tipos"></div><div class="nombres"></div>
+      <div class="ctl"><button data-a="presencial" title="Cargar aviso presencial en este día" aria-label="Cargar aviso presencial en este día" style="font:700 18px/1 var(--sans);background:var(--accent);color:var(--bg);border-color:var(--accent)">+</button><button data-a="abrir" class="abrir">VER DIARIO</button><button data-a="cerrar" data-cerrado="${cerr?"si":"no"}">${cerr?"Reabrir":"CERRAR"}</button></div>`;
+    el.querySelector(".nombres").textContent=nom.join(", ");
+    delDia(f).filter(a=>a.estudio).forEach(a=>{const b=document.createElement("div");b.className="estudio"+(a.descargado?" ok":"");b.title=a.descargado?"Adjuntos descargados y preparados":"Estudio con estado de cuenta: descargar los adjuntos del correo y preparar la publicación";b.textContent=(a.descargado?"✓ ":"⬇ ")+a.estudio+(a.descargado?" · preparado":" · descargar adjuntos");const btn=document.createElement("button");btn.textContent=a.descargado?"Deshacer":"Listo";btn.disabled=!db||!puede;btn.onclick=async ev=>{ev.stopPropagation();const {id,...r}=a;try{await db.doc("avisos/"+id).set({...r,descargado:!a.descargado})}catch(e){aviso("No se pudo guardar: "+e.code)}};b.appendChild(btn);el.querySelector(".f").after(b)});
+    const sp=delDia(f).filter(a=>a.estado==="sin_pago").length,pi=delDia(f).filter(a=>a.estado==="pago_informado").length;
+    if(sp||pi){const w=document.createElement("div");w.className=cerr&&sp?"conf":"pend";w.textContent=cerr&&sp?`⚠ ${sp} sin pago: se corren a la próxima fecha`:[sp?sp+" sin pago":"",pi?pi+" con pago a verificar":""].filter(Boolean).join(" · ");el.querySelector(".cant").after(w)}
+    const cuenta={};delDia(f).forEach(a=>{const k=LBL[a.tipo]||"otro";cuenta[k]=(cuenta[k]||0)+1});el.querySelector(".tipos").textContent=Object.entries(cuenta).map(([k,v])=>v+" "+k+(v>1&&!k.includes("/")?"s":"")).join(" · ");
+    el.querySelectorAll("button").forEach(b=>{b.dataset.f=f;b.disabled=!db||!puede||pas});
+    cal.appendChild(el)}
+}
+let envios=[];
+function renderPres(){const L=document.getElementById("preslista");if(!L)return;const ls=avisos.filter(a=>a.origen==="presencial"&&(a.fechas||[]).at(-1)>=iso(add(hoy0(),-3))).sort((a,b)=>String(a.fechas[0]).localeCompare(String(b.fechas[0])));
+  if(!ls.length){L.innerHTML='<div class="m">Todavía no hay avisos presenciales cargados.</div>';return}L.innerHTML="";
+  ls.forEach(a=>{const r=document.createElement("div");r.style.cssText="display:flex;flex-wrap:wrap;gap:4px 14px;padding:6px 0;border-top:1px solid var(--line)";
+    const fx=a.fechas||[];r.innerHTML="<b></b><span class=m></span><span class=m></span>";r.children[0].textContent=a.cliente;
+    r.children[1].textContent=(LBL[a.tipo]||a.tipo)+" · "+(fx.length?fx[0].slice(8)+"/"+fx[0].slice(5,7)+" al "+fx.at(-1).slice(8)+"/"+fx.at(-1).slice(5,7):"");
+    r.children[2].textContent="presencial";L.appendChild(r)})}
+document.getElementById("btnPres").onclick=()=>presencial(iso(primeraEdicion()));
+function renderRev(){const L=document.getElementById("revlista");L.innerHTML="";const lim=new Date();lim.setDate(lim.getDate()-4);
+  const ls=envios.filter(x=>!x.fecha||new Date(x.fecha)>=lim||!x.revision);if(!ls.length){L.innerHTML='<div class="m">Sin envíos automáticos todavía.</div>';return}
+  ls.forEach(x=>{const r=document.createElement("div");const st=x.revision||"pendiente";
+    r.style.cssText="background:var(--card);border:1px solid var(--line);border-left:5px solid var(--"+(st==="bien"?"ok":st==="corregir"?"crit":"warn")+");padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center";
+    const t=document.createElement("div");t.style.cssText="flex:1 1 260px;min-width:0";
+    t.innerHTML="<b></b> <span class=m></span><div style=font-size:13px></div><div class=m></div>";
+    t.children[0].textContent=x.cliente||"(sin nombre)";t.children[1].textContent=(x.fecha?new Date(x.fecha).toLocaleString("es-PY",{weekday:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"")+" · "+(x.tipo_respuesta||"")+(x.monto?" · Gs. "+Number(x.monto).toLocaleString("es-PY"):"");
+    t.children[2].textContent=x.resumen||"";t.children[3].textContent=x.nota?"Nota: "+x.nota:(st==="pendiente"?"Sin revisar":"");r.appendChild(t);
+    const mk=(lab,val)=>{const b=document.createElement("button");b.textContent=lab;b.disabled=!db||!puede;b.onclick=async()=>{let nota=x.nota||"";if(val==="corregir"){const n=prompt("¿Qué hay que corregir?",nota);if(n===null)return;nota=n}const {id,...resto}=x;try{await db.doc("envios_auto/"+id).set({...resto,revision:val,nota,revisado:new Date().toISOString()})}catch(e){aviso("No se pudo guardar: "+e.code)}};return b};
+    if(x.hilo){const a=document.createElement("a");a.href="https://mail.google.com/mail/?authuser=diarioinformacionespy@gmail.com#all/"+x.hilo;a.target="_blank";a.rel="noopener";a.textContent="Ver correo";a.style.color="var(--accent)";r.appendChild(a)}
+    r.appendChild(mk("✓ Bien","bien"));r.appendChild(mk("✎ Corregir","corregir"));L.appendChild(r)})}
+async function guardar(f,cambio){try{await db.doc("dias/"+f).set({...(dias[f]||{}),fecha:f,...cambio,actualizado:new Date().toISOString()})}catch(e){aviso("No se pudo guardar: "+e.code)}}
+document.getElementById("cal").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.disabled)return;const f=b.dataset.f;
+  if(b.dataset.a==="cerrar")guardar(f,{cerrado:!cerradoDia(f)});
+  if(b.dataset.a==="abrir")abrirPagina(f);
+  if(b.dataset.a==="presencial")presencial(f)});
+const DIAS_TIPO={asamblea:5,sociedad:3,marca_registro:3,derecho_autor:3,marca_renovacion:1,marca_transferencia:1,edicto:1,otro:1};
+function presencial(f){
+  const w=document.createElement("div");w.className="pag-ov";w.style.zIndex=60;
+  w.innerHTML=`<div class="pag" style="max-width:520px"><div class="pag-top"><button class="pag-x" aria-label="Cerrar">✕</button><div class="pag-fecha">Cargar aviso presencial</div><div class="pag-hint">El cliente vino con su aviso en mano, se verificaron los datos, se facturó y se escaneó. Cargalo acá para que ocupe su lugar.</div></div>
+  <form id="fp" style="display:flex;flex-direction:column;gap:10px;font:14px var(--sans)">
+  <label>Nombre de la empresa<br><input id="fp-cli" required style="width:100%;padding:6px"></label>
+  <label>¿Qué día sale?<br><input id="fp-ini" type="date" required value="${f}" style="width:100%;padding:6px"></label>
+  <label>Tipo de aviso (define cuántos días ocupa)<br><select id="fp-tipo" style="width:100%"><option value="asamblea">Asamblea (5 días)</option><option value="sociedad">Constitución / estatuto (3 días)</option><option value="marca_registro">Registro de marca (3 días)</option><option value="derecho_autor">Derecho de autor (3 días)</option><option value="marca_transferencia">Transferencia de marca (1 día)</option><option value="marca_renovacion">Renovación de marca (1 día)</option><option value="edicto">Edicto / denuncia / extravío (1 día)</option><option value="otro">Otro (1 día)</option></select></label>
+  <label class="pag-ver" style="cursor:pointer;background:#0f5f63">📷 DIGITALIZAR AVISO (foto o PDF)<input id="fp-file" type="file" accept="image/*,application/pdf" capture="environment" style="display:none"></label>
+  <div id="fp-fn" class="pag-hint">Sacale una foto al aviso o subí el escaneo. Se guarda en el Drive del diario para que el diseñador arme la página.</div>
+  <div id="fp-msg" class="pag-hint"></div>
+  <button class="pag-ver" style="border:0">GUARDAR EN EL POOL</button></form></div>`;
+  const $=id=>w.querySelector("#"+id);
+  $("fp-file").onchange=()=>{const fl=$("fp-file").files[0];$("fp-fn").textContent=fl?"✔ "+fl.name+" ("+Math.round(fl.size/1024)+" KB) listo para guardar":"Sin archivo"};
+  $("fp").addEventListener("submit",async e=>{e.preventDefault();if(!db||!puede){$("fp-msg").textContent="No tenés permiso para guardar.";return}
+    const n=DIAS_TIPO[$("fp-tipo").value]||1,fechas=[];const ini=$("fp-ini").value||f;for(let i=0;i<n;i++)fechas.push(iso(add(new Date(ini+"T12:00:00"),i)));
+    const tipo=$("fp-tipo").value;
+    const d=new Date(),id="PR-"+iso(d).slice(2).replace(/-/g,"")+"-"+String(d.getHours()).padStart(2,"0")+String(d.getMinutes()).padStart(2,"0")+String(d.getSeconds()).padStart(2,"0");
+    const doc={cliente:$("fp-cli").value.trim(),tipo,fechas,estado:"confirmada",origen:"presencial",creado:d.toISOString()};
+    const fl=$("fp-file").files[0];
+    if(fl){$("fp-msg").textContent="Subiendo el aviso digitalizado…";try{const as=await window.claude.use("assets");if(!as)throw{code:"sin_permiso"};const up=await as.upload(fl);doc.archivo={asset_id:up.id,url:up.url,nombre:fl.name,tipo:fl.type,en_drive:false}}catch(err){$("fp-msg").textContent="No se pudo subir el archivo ("+(err.code||err)+"). Se guarda el aviso sin archivo; avisale a Claude.";}}
+    try{await db.doc("avisos/"+id).set(doc);w.remove();aviso("Aviso presencial guardado: "+doc.cliente+" ("+id+")")}catch(err){$("fp-msg").textContent="No se pudo guardar: "+(err.code||err)}});
+  w.querySelector(".pag-x").onclick=()=>w.remove();w.addEventListener("click",e=>{if(e.target===w)w.remove()});document.body.appendChild(w)}
+function abrirPagina(f){
+  const d=new Date(f+"T12:00:00"),orden=(dias[f]&&dias[f].orden)||[];
+  const todos=delDia(f),noPag=todos.filter(a=>a.estado!=="confirmada");
+  let lista=todos.filter(a=>a.estado==="confirmada").sort((a,b)=>{const ia=orden.indexOf(a.id),ib=orden.indexOf(b.id);return (ia<0?999:ia)-(ib<0?999:ib)});
+  const EST={sin_pago:"SIN PAGO",pago_informado:"PAGO A VERIFICAR",confirmada:"PAGADO"};
+  const ov=document.createElement("div");ov.className="pag-ov";
+  ov.innerHTML=`<div class="pag diario"><div class="pag-top"><button class="pag-x" aria-label="Cerrar">✕</button><button class="pag-tg" aria-pressed="true">🖍 VER GRÁFICOS</button><button class="pag-fin" aria-pressed="false">👁 OCULTAR TODO</button><div class="d-mast"><b>Diario <span>INFORMACIONES</span></b></div><div class="d-sub"><span>Asunción, ${["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][d.getDay()]} ${d.getDate()} de ${MES[d.getMonth()]} de ${d.getFullYear()}</span><span>Avisos y publicaciones legales</span><span>${lista.length} avisos</span></div><div class="pag-ley"><span class="r0">❌</span> vence hoy · <span class="r1">〰</span> vence mañana · <span class="r2">✔</span> vence pasado mañana · <span class="nv">┃</span> aviso nuevo que entra hoy</div><div class="pag-hint">Solo aparecen los avisos <b>pagados</b> (y estudios con estado de cuenta). ${noPag.length?`Quedan afuera ${noPag.length} sin pago: ${noPag.map(a=>a.cliente).join(", ")}.`:""} Los avisos en curso no se pueden borrar: siguen hasta completar sus días.</div><div class="pag-hint">Arrastrá los avisos para ordenarlos en la página. El orden se guarda para todo el equipo.</div></div><div class="pag-cols"></div><svg width="0" height="0" style="position:absolute"><filter id="crayon"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3"/></filter></svg></div>`;
+  const cols=ov.querySelector(".pag-cols");let drag=null;
+  lista.forEach(a=>{const c=document.createElement("div");c.className="pag-av"+(a.estudio?" est":"");c.draggable=true;c.dataset.id=a.id;
+    const t=document.createElement("div");t.className="pag-tipo";t.textContent=({asamblea:"Convocatoria a Asamblea",sociedad:"Extracto de escritura",marca:"Marcas",marca_registro:"Solicitud de registro de marca",marca_renovacion:"Renovación de marca",marca_transferencia:"Transferencia de marca",edicto:"Edicto",derecho_autor:"Derecho de autor"}[a.tipo]||"Aviso").toUpperCase()+(a.estudio?" · "+a.estudio:"");
+    const nDia=(a.fechas||[]).indexOf(f)+1,tot=(a.fechas||[]).length;
+    const dx=document.createElement("div");dx.className="pag-dia"+(nDia>1?" sigue":"");dx.textContent=`DÍA ${nDia} DE ${tot}`+(nDia===1?" · inicia":nDia===tot?" · último":" · viene de días anteriores");t.after?null:null;
+    const n=document.createElement("div");n.className="pag-nom";n.textContent=a.cliente||"";
+    const s=document.createElement("div");s.className="pag-est "+(a.estado||"");s.textContent=a.estudio?"ESTADO DE CUENTA":(EST[a.estado]||a.estado||"");
+    if(a.tipo==="asamblea"&&a.fecha_asamblea&&a.fechas&&a.fechas.length){const dd=Math.round((new Date(a.fecha_asamblea+"T12:00:00")-new Date(a.fechas[0]+"T12:00:00"))/864e5);const pz=document.createElement("div");pz.className="pag-plazo"+(dd<10?" mal":dd<11?" justo":"");pz.textContent=dd<10?`⚠ Plazo NO cumple: ${dd} días`:`Plazo: ${dd} días antes de la asamblea${dd<11?" (justo, no se puede atrasar)":""}`;c.appendChild(pz)}
+    if(a.texto_revisar||a.drive_original){const oj=document.createElement("div");oj.className="pag-ojo";oj.textContent="⚠ OJO DISEÑADOR: "+(a.drive_original?"usar el documento CORREGIDO (botón de abajo), NO el PDF del cliente. ":"")+(a.texto_revisar||"");if(a.drive_original){const lo=document.createElement("a");lo.href=a.drive_original;lo.target="_blank";lo.rel="noopener";lo.textContent=" (ver PDF original solo como referencia)";lo.onclick=e=>e.stopPropagation();oj.appendChild(lo)}c.appendChild(oj)}
+    const x=document.createElement("div");x.className="pag-txt";const xm=document.createElement("span");xm.className="pag-meta";xm.textContent=[a.fecha_asamblea?"Asamblea: "+a.fecha_asamblea.split("-").reverse().join("/"):"",(a.fechas||[]).length?"Publica: "+a.fechas[0].slice(8)+"/"+a.fechas[0].slice(5,7)+" al "+a.fechas.at(-1).slice(8)+"/"+a.fechas.at(-1).slice(5,7):"",a.texto?"":(a.nota||"")].filter(Boolean).join(" · ")+(a.texto?" · ":"");const xb=document.createElement("span");xb.className="pag-cuerpo";xb.textContent=a.texto||"";x.append(xm,xb);
+    const cod=document.createElement("div");cod.className="pag-cod";cod.textContent=a.id;
+    const ver=document.createElement("a");ver.className="pag-ver";ver.target="_blank";ver.rel="noopener";
+    if(a.drive_url){ver.href=a.drive_url;ver.textContent=a.drive_original?"📄 ABRIR ANUNCIO CORREGIDO":"📄 ABRIR ANUNCIO"}
+    else if(a.archivo&&a.archivo.url){ver.href=a.archivo.url;ver.textContent="📷 VER AVISO DIGITALIZADO"}
+    else if(a.thread_id){ver.href="https://mail.google.com/mail/?authuser=diarioinformacionespy@gmail.com#all/"+a.thread_id;ver.textContent="✉ ABRIR CORREO (sin archivo en Drive)"}
+    else{ver.href="https://drive.google.com/drive/search?q="+encodeURIComponent((a.cliente||"").split(/[·(]/)[0].trim());ver.textContent="🔎 BUSCAR EN DRIVE"}
+    ver.addEventListener("click",e=>{e.stopPropagation();if(!a.drive_url)return;e.preventDefault();
+      const docs=[a.drive_url,a.drive_url_2].filter(Boolean).map(u=>u.replace(/\/view.*$/,"/preview"));
+      const w=document.createElement("div");w.className="pag-ov";w.style.zIndex=60;
+      w.innerHTML='<div class="pag" style="max-width:1000px"><div class="pag-top"><button class="pag-x">✕</button><div class="pag-fecha"></div><a class="pag-ext" target="_blank" rel="noopener">Abrir en Drive ↗</a></div><div class="pag-docs"></div></div>';
+      w.querySelector(".pag-fecha").textContent=a.cliente+" · "+a.id;w.querySelector(".pag-ext").href=a.drive_url;
+      docs.forEach(u=>{const fr=document.createElement("iframe");fr.src=u;fr.className="pag-frame";fr.setAttribute("allow","autoplay");w.querySelector(".pag-docs").appendChild(fr)});
+      w.querySelector(".pag-x").onclick=()=>w.remove();w.addEventListener("click",e=>{if(e.target===w)w.remove()});document.body.appendChild(w)});
+    let vt=null;if(a.texto){vt=document.createElement("button");vt.className="pag-ver";vt.style.border="0";vt.style.width="100%";vt.textContent="📝 VER TEXTO DEL ANUNCIO";vt.onclick=ev=>{ev.stopPropagation();const w=document.createElement("div");w.className="pag-ov";w.style.zIndex=60;w.innerHTML='<div class="pag" style="max-width:760px"><div class="pag-top"><button class="pag-x">✕</button><div class="pag-fecha"></div></div><pre class="pag-pre"></pre><button class="pag-ver pag-cp" style="border:0;width:100%">📋 COPIAR TEXTO</button></div>';w.querySelector(".pag-fecha").textContent=a.cliente+" · "+a.id;w.querySelector(".pag-pre").textContent=a.texto;w.querySelector(".pag-x").onclick=()=>w.remove();w.addEventListener("click",e=>{if(e.target===w)w.remove()});w.querySelector(".pag-cp").onclick=async e=>{try{await navigator.clipboard.writeText(a.texto);e.target.textContent="✔ COPIADO"}catch(_){}};document.body.appendChild(w)}}
+    const mv=document.createElement("div");mv.className="pag-mv";
+    [["◀ Día anterior",-1],["Siguiente día ▶",1]].forEach(([lab,dlt])=>{const bt=document.createElement("button");bt.textContent=lab;bt.disabled=!db||!puede;bt.onclick=async ev=>{ev.stopPropagation();
+      if((a.fechas||[])[0]<=iso(hoy0())){alert(`No se puede mover: "${a.cliente}" ya empezó a publicarse el ${a.fechas[0].slice(8)}/${a.fechas[0].slice(5,7)} (hoy es el día ${Math.max(1,(a.fechas.indexOf(iso(hoy0()))+1)||1)} de ${a.fechas.length}). Una publicación en curso debe salir en días seguidos.`);return}
+      const nf=(a.fechas||[]).map(x=>iso(add(new Date(x+"T12:00:00"),dlt)));
+      if(nf.length&&nf.some(x=>cerrado(x))&&dlt>0){if(!confirm("Alguna de las nuevas fechas está CERRADA por el diseñador. ¿Mover igual?"))return}
+      if(a.tipo==="asamblea"&&a.fecha_asamblea){const dd=Math.round((new Date(a.fecha_asamblea+"T12:00:00")-new Date(nf[0]+"T12:00:00"))/864e5);if(dd<10){alert(`No se puede mover: la asamblea es el ${a.fecha_asamblea.split("-").reverse().join("/")} y la primera publicación quedaría a ${dd} días. La ley exige al menos 10 días (Art. 1082 C.C.).`);return}}
+      if(a.vence_dinapi&&nf.at(-1)>a.vence_dinapi){alert(`No se puede mover: vence en DINAPI el ${a.vence_dinapi.split("-").reverse().join("/")}.`);return}
+      if(!confirm(`Mover "${a.cliente}" ${dlt>0?"un día después":"un día antes"}?\nNuevas fechas: ${nf[0].slice(8)}/${nf[0].slice(5,7)} al ${nf.at(-1).slice(8)}/${nf.at(-1).slice(5,7)}`))return;
+      const {id,...r}=a;try{await db.doc("avisos/"+id).set({...r,fechas:nf,movido_manual:new Date().toISOString()});c.remove()}catch(e){aviso("No se pudo mover: "+e.code)}};mv.appendChild(bt)});
+    if(nDia===1&&tot>1||nDia===1&&tot===1){const nv=document.createElement("div");nv.className="pag-mk nuevo";nv.title="Aviso nuevo, recién incorporado";nv.innerHTML='<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M50 4 Q47 50 51 96" stroke="#1e88e5"/></svg>';c.appendChild(nv)}
+    const rest=tot-nDia;if(rest<=2&&(nDia>1||tot>1)){const mk=document.createElement("div");mk.className="pag-mk r"+rest;mk.innerHTML=[
+      '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M12 10 Q50 52 90 92 M88 8 Q48 50 10 90" stroke="#e53935"/></svg>',
+      '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M78 6 C20 4 10 22 50 30 C92 38 88 56 46 62 C10 68 14 84 60 94" stroke="#1e88e5"/></svg>',
+      '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M18 58 Q30 72 40 90 Q58 46 86 8" stroke="#1e88e5"/></svg>'][rest];mk.title=["Último día: lugar libre para el día siguiente","Queda 1 día: lugar libre en 2 días","Quedan 2 días: lugar libre en 3 días"][rest];c.appendChild(mk)}
+    const hr=document.createElement("div");hr.className="pag-herr";hr.append(dx,s,cod);c.append(t,n,x,hr,ver);if(vt)c.append(vt);c.append(mv);
+    c.addEventListener("dragstart",()=>{drag=c;c.classList.add("drag")});c.addEventListener("dragend",()=>{c.classList.remove("drag");drag=null;guardarOrden()});
+    c.addEventListener("dragover",e=>{e.preventDefault();if(drag&&drag!==c){const r=c.getBoundingClientRect();cols.insertBefore(drag,(e.clientY-r.top)>r.height/2?c.nextSibling:c)}});
+    cols.appendChild(c)});
+  if(!lista.length)cols.innerHTML='<div class="m">Sin avisos cargados para este día.</div>';
+  function guardarOrden(){if(!db||!puede)return;const o=[...cols.querySelectorAll(".pag-av")].map(e=>e.dataset.id);guardar(f,{orden:o})}
+  const cerrar=()=>{ov.remove();document.removeEventListener("keydown",esc)};const esc=e=>{if(e.key==="Escape")cerrar()};
+  const tg=ov.querySelector(".pag-tg");let ver=true;try{ver=localStorage.getItem("pool_graficos")!=="no"}catch(e){}
+  const aplicar=()=>{ov.classList.toggle("sin-graf",!ver);tg.textContent=ver?"🖍 OCULTAR GRÁFICOS":"🖍 VER GRÁFICOS";tg.setAttribute("aria-pressed",String(ver))};aplicar();
+  const fin=ov.querySelector(".pag-fin");fin.onclick=()=>{const on=!ov.querySelector(".pag").classList.toggle("final")?false:true;fin.textContent=on?"👁 MOSTRAR TODO":"👁 OCULTAR TODO";fin.setAttribute("aria-pressed",String(on));fin.style.right=on?"56px":"220px"};
+  tg.onclick=()=>{ver=!ver;try{localStorage.setItem("pool_graficos",ver?"si":"no")}catch(e){}aplicar()};
+  ov.querySelector(".pag-x").onclick=cerrar;ov.addEventListener("click",e=>{if(e.target===ov)cerrar()});document.addEventListener("keydown",esc);
+  document.body.appendChild(ov)}
+document.getElementById("ant").onclick=()=>{off--;render()};
+document.getElementById("sig").onclick=()=>{off++;render()};
+document.getElementById("hoy").onclick=()=>{off=0;render()};
+document.getElementById("ver").onchange=e=>{ver=+e.target.value;render()};
+document.addEventListener("keydown",e=>{if(e.target.closest("select"))return;if(e.key==="ArrowRight"){off++;render()}if(e.key==="ArrowLeft"){off--;render()}});
+render();
+(async()=>{
+  const t=setTimeout(()=>aviso("Todavía no se pudo conectar con la base de datos."),10000);
+  try{db=await window.claude?.use("db")}catch{db=null}
+  if(!db){clearTimeout(t);aviso("Sin conexión a la base de datos en esta vista.");render();return}
+  try{const u=await window.claude?.use("user");if(u&&await u.can("data.write")===false)puede=false}catch{}
+  let n=0;const listo=()=>{if(++n>=3){clearTimeout(t);aviso(puede?"Conectado. Los cambios se ven al instante para todo el equipo.":"Solo lectura.")}};
+  db.doc("config/general").onSnapshot(s=>{if(s.exists)cfg={...cfg,...s.data()};render();if(!s.metadata.fromCache)listo()},e=>aviso("Error: "+e.code));
+  db.collection("dias").onSnapshot(s=>{dias={};s.docs.forEach(d=>dias[d.id]=d.data());render();if(!s.metadata.fromCache)listo()},e=>aviso("Error: "+e.code));
+  db.collection("avisos").onSnapshot(s=>{avisos=s.docs.map(d=>({...d.data(),id:d.id}));render();renderPres();if(!s.metadata.fromCache)listo()},e=>aviso("Error: "+e.code));
+  db.collection("envios_auto").onSnapshot(s=>{envios=s.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>String(b.fecha||"").localeCompare(String(a.fecha||"")));renderRev()},()=>{});
+})();
+</script>

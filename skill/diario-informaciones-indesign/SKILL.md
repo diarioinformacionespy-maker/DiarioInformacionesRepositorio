@@ -59,8 +59,8 @@ Tomado del diario impreso del jueves 12/11/2026 (NH, NHOW, DYNASTY, Bioval…). 
 
 | # | Bloque (`corregido_bloques`) | Contenido | Formato |
 |---|---|---|---|
-| 1 | `AV_MFecha` | "Asunción, 6 de Noviembre de 2026" (fecha de la orden de DINAPI, mes con mayúscula) | izquierda |
-| 2 | `AV_MIntro` | "Publíquese por el término de ley la presente marca constituida por:" | justificado, sangría 1ª línea |
+| 1 | `AV_MFecha` | "Asunción, 6 de Noviembre de 2026" (fecha de la orden de DINAPI, mes con mayúscula) | UNA sola línea, justificada a todo el ancho (Hugo 23/11) |
+| 2 | `AV_MIntro` | "Publíquese por el término de ley la presente marca constituida por:" | justificado; la sangría son 3 ESPACIOS al inicio, no sangría de párrafo (Hugo 23/11) |
 | 3 | `AV_MDenom` | "Denominación:" | izquierda |
 | 4 | `AV_MNombre` | NOMBRE de la marca tal cual la orden (ej. NH COLLECTION, Bioval) | negrita, centrado, aire arriba/abajo |
 | 5 | `AV_Logo` | `[[LOGO:logo_<código>.png]]` — SOLO si el signo es Mixto o Figurativo. Denominativas (Bioval, Multivag, NIRMIN 5) NO llevan logo | centrado; el script lo reemplaza por la imagen |

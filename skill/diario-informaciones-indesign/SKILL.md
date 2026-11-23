@@ -64,10 +64,11 @@ Tomado del diario impreso del jueves 12/11/2026 (NH, NHOW, DYNASTY, Bioval…). 
 | 3 | `AV_MDenom` | "Denominación:" | izquierda |
 | 4 | `AV_MNombre` | NOMBRE de la marca tal cual la orden (ej. NH COLLECTION, Bioval) | negrita, centrado, aire arriba/abajo |
 | 5 | `AV_Logo` | `[[LOGO:logo_<código>.png]]` — SOLO si el signo es Mixto o Figurativo. Denominativas (Bioval, Multivag, NIRMIN 5) NO llevan logo | centrado; el script lo reemplaza por la imagen |
-| 6 | `AV_MCampo` (uno por línea) | Fecha de Solicitud: DD/MM/AAAA · Hora de presentación: HH:MM:SS · Nº de expediente: … · Clase que ampara: N · Solicitante: … · Domicilio: … · Tipo de marca: Registro / Renovación | justificado |
+| 6 | `AV_MCampoJ` (Fecha de Solicitud, Hora de presentación, Nº de expediente) y `AV_MCampo` (el resto), uno por línea | Fecha de Solicitud: DD/MM/AAAA · Hora de presentación: HH:MM:SS · Nº de expediente: … · Clase que ampara: N · Solicitante: … · Domicilio: … · Tipo de marca: Registro / Renovación | justificado |
 | 7 | `AV_MFirma` | "Firma y Sello del Funcionario Autorizado" | justificado, última línea ("Autorizado") centrada |
 | 8 | `AV_OP` | "Opas ____) DD-MES" (último día de publicación, mes en romanos) | derecha |
 
+- **Campos (Hugo 23/11):** Fecha de Solicitud, Hora de presentación y Nº de expediente van cada uno en UNA línea justificada a todo el ancho (`AV_MCampoJ`); el resto justificado normal. **Nº de expediente** = Nº de solicitud de DINAPI con formato AAAA-número: los 2 primeros dígitos son el año (26 → 2026) y el resto va después del guion (26101332 → 2026-101332; 2695922 → 2026-95922). El exportador del Pool lo convierte solo.
 - NO se publica la descripción de productos/servicios (el diario no la pone). Varias solicitudes en una misma orden (ej. GATO DUMAS 2697345/348/351) = un aviso por expediente, cada uno con su clase.
 - **Logo:** se recorta de la orden de DINAPI ("(540) Distintivo"), se pasa a gris, 300 dpi, PNG, SIN fondo gris ni líneas del escaneo (renglones, punteados, sello), y se guarda en el Pool (asset) con `logo_img: {asset_id, url, archivo: "logo_<código>.png", pagina_pdf}`. Si varios expedientes comparten logo, reusan el mismo archivo.
 - **Exportar:** el botón "EXPORTAR A INDESIGN" del Pool baja el `InDesign_avisos_<fecha>.txt` y, a continuación, cada logo (`logo_<código>.png`). Guardar todo en la misma carpeta.

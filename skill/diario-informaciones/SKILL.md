@@ -209,6 +209,12 @@ En esos casos, además del borrador, se deja una **tarjeta en el Tablero de Pend
   - Antes de crear un borrador, se revisa el hilo. Si después del último mensaje del cliente ya hay una respuesta enviada por el diario (Hugo, Claudio u otro), NO se crea borrador ni se "mejora" lo que dijeron.
   - Solo se actualiza el Pool con lo que pusieron.
   - Se vuelve a escribir solo cuando el cliente manda un mensaje NUEVO después de esa respuesta.
+  - **LA RESPUESTA A MANO NO SACA EL AVISO DEL CIRCUITO (Eddy, 23/11/2026; caso ADAMA y registros de Abente Stewart del 20/11, que Hugo contestó "RECIBIDO HUGO GOMEZ" y nunca entraron al Pool).** Si el cliente mandó un documento (adjunto, link de Drive, foto o texto del aviso), ES UN AVISO aunque Hugo, Claudio u otro ya haya respondido. Lo único que se salta es el borrador. Todo lo demás se hace igual:
+    1. Subir el original tal cual a ORIGINALES/<aaaa-mm-dd de llegada> (si el script no lo tomó).
+    2. Cargarlo en el Pool (estudio → `confirmada` con `estudio` y `descargado:false`; los demás con el estado que corresponda según el pago), con `thread_id`. Un PDF con varias órdenes = un aviso por orden ("-B", "-C"…), con el detalle de cada una (registro/acta/clase) en el nombre.
+    3. Armar el CORREGIDO en CORREGIDOS/<fecha de la primera publicación> y guardar `corregido_bloques`, para que salga en la exportación a InDesign.
+    4. Si es estudio: etiqueta Label_7 en el hilo.
+  - **Antes de cargar, buscar duplicados:** si el mismo aviso ya fue cargado como presencial (origen `presencial`, mismo cliente, mismo registro/acta o mismo archivo), se completa ese registro (se le agrega `thread_id`, detalle y CORREGIDO) en vez de crear otro.
 
 - **Orden del día compartido:** cuando un estudio contable manda varias empresas en un mismo detalle y una empresa termina en "para tratar el siguiente:" sin orden del día propio, comparte el ORDEN DEL DÍA que aparece a continuación (el de la empresa siguiente). NO se le pregunta al cliente ni se anota nada para el diseñador: lo entiende al ver el anuncio.
 
@@ -340,6 +346,7 @@ En esos casos, además del borrador, se deja una **tarjeta en el Tablero de Pend
 
 **Revisión de pendientes (rutina, Eddy 09/11/2026).** Se hace cuando Eddy pide "ver quién quedó sin responder", y en cada pasada:
 1. **Bandeja:** buscar los hilos de la última semana cuyo **último mensaje es del cliente**. Se descartan los avisos del banco, la DNIT/SET, Google y los "gracias" o "recibido" del cliente. Cada pedido sin respuesta lleva su borrador.
+   - **Además (Eddy, 23/11/2026):** buscar los hilos de la última semana con adjunto (`has:attachment`, y los de estudios `@abentestewart.com.py` / `@berke.com.py`) cuyo último mensaje es NUESTRO (respuesta a mano). Si el documento del cliente no está en el Pool (buscar por `thread_id` o por el cliente), se procesa igual: ORIGINALES → Pool → CORREGIDOS (ver "La respuesta a mano no saca el aviso del circuito"). Sin borrador.
 2. **Presupuestos sin pago:** hilos donde lo último fue nuestro precio y no hay pago.
    - Primero se cruza con los correos del banco (`pagos.py`).
    - Después se busca el nombre de la empresa en las **ediciones enviadas a la imprenta** (correos a `solpresctp@gmail.com`: Gmail indexa el texto de esos PDF; uso interno, no se envía a clientes). Si sale publicado, pagó por otro medio: se carga en el Pool como `confirmada`.

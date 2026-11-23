@@ -70,6 +70,26 @@ En esos casos, además del borrador, se deja una **tarjeta en el Tablero de Pend
     - Se excluyen solo los archivos que no son avisos (comprobantes de pago, logos o firmas de correo, capturas).
     - Si se recibe una versión nueva (ej. "convocatoria modificada"), se rehace el CORREGIDO desde la ÚLTIMA versión (mismo doc, nunca uno nuevo).
     - Si algo no se puede leer o falta información, igual se crea el CORREGIDO con "[FALTA …]" marcado, `texto_revisar` en el Pool y tarjeta en el Tablero.
+  - **Preset MARCA (registros y renovaciones de marca) — Eddy 23/11/2026):** el CORREGIDO de toda marca se arma con este preset (detalle también en el skill diario-informaciones-indesign).
+
+  Tomado del diario impreso del jueves 12/11/2026 (NH, NHOW, DYNASTY, Bioval…). Cada marca se arma SIEMPRE así, en este orden, en una columna, con una línea separadora abajo:
+
+  | # | Bloque (`corregido_bloques`) | Contenido | Formato |
+  |---|---|---|---|
+  | 1 | `AV_MFecha` | "Asunción, 6 de Noviembre de 2026" (fecha de la orden de DINAPI, mes con mayúscula) | izquierda |
+  | 2 | `AV_MIntro` | "Publíquese por el término de ley la presente marca constituida por:" | justificado, sangría 1ª línea |
+  | 3 | `AV_MDenom` | "Denominación:" | izquierda |
+  | 4 | `AV_MNombre` | NOMBRE de la marca tal cual la orden (ej. NH COLLECTION, Bioval) | negrita, centrado, aire arriba/abajo |
+  | 5 | `AV_Logo` | `[[LOGO:logo_<código>.png]]` — SOLO si el signo es Mixto o Figurativo. Denominativas (Bioval, Multivag, NIRMIN 5) NO llevan logo | centrado; el script lo reemplaza por la imagen |
+  | 6 | `AV_MCampo` (uno por línea) | Fecha de Solicitud: DD/MM/AAAA · Hora de presentación: HH:MM:SS · Nº de expediente: … · Clase que ampara: N · Solicitante: … · Domicilio: … · Tipo de marca: Registro / Renovación | justificado |
+  | 7 | `AV_MFirma` | "Firma y Sello del Funcionario Autorizado" | justificado, última línea ("Autorizado") centrada |
+  | 8 | `AV_OP` | "Opas ____) DD-MES" (último día de publicación, mes en romanos) | derecha |
+
+  - NO se publica la descripción de productos/servicios (el diario no la pone). Varias solicitudes en una misma orden (ej. GATO DUMAS 2697345/348/351) = un aviso por expediente, cada uno con su clase.
+  - **Logo:** se recorta de la orden de DINAPI ("(540) Distintivo"), se pasa a gris, 300 dpi, PNG, SIN fondo gris ni líneas del escaneo (renglones, punteados, sello), y se guarda en el Pool (asset) con `logo_img: {asset_id, url, archivo: "logo_<código>.png", pagina_pdf}`. Si varios expedientes comparten logo, reusan el mismo archivo.
+  - **Exportar:** el botón "EXPORTAR A INDESIGN" del Pool baja el `InDesign_avisos_<fecha>.txt` y, a continuación, cada logo (`logo_<código>.png`). Guardar todo en la misma carpeta.
+  - **Colocar logos:** después de colocar el .txt en InDesign (Archivo → Colocar), correr `scripts/colocar_logos.jsx` (repo: `skill/diario-informaciones-indesign/scripts/`). Busca cada `[[LOGO:archivo]]`, pone la imagen como gráfico en línea centrado, ajustado al ancho de la columna y a máx. 18 mm de alto, y avisa cuáles no encontró. Por el puente: `ejecutar_extendscript` con ese código (cambiar `Folder.selectDialog` por la ruta de la carpeta).
+  - Transferencias de marca (ej. ADAMA): sin logo, texto de la orden de Actos Jurídicos ("Publíquese por el término de Ley la Transferencia de la marca denominada…").
   - **Hugo pide "exportar para InDesign"** → se le dan los CORREGIDOS (IA).
   - **Eddy/Luzana piden "imprimir para que Marta corrija"** → se exportan los ORIGINALES (Marta corrige SOLO desde lo que mandó el cliente). PDF con una hoja por aviso: código, cliente, fechas de publicación y el original tal cual (texto o imagen del archivo), espacio para que Marta marque a mano y firme.
   - **REGLA (Eddy, 18/11/2026, caso AV S.A. / Aquino+): los diarios que se envían a clientes se toman ÚNICAMENTE del correo enviado a Nelson Páez <nelpa90@gmail.com> (asunto "Diarios pdf"; búsqueda `in:sent to:nelpa90@gmail.com filename:pdf`). NUNCA se manda al cliente el PDF del correo "DIARIO" a solpresctp@gmail.com ni de otro correo. Si la edición pedida aún no está en un correo a nelpa90 → no se envía nada (Label_14 + UNREAD + INBOX + tarjeta en el Tablero, o esperar a que Claudio la mande a Nelson). Error del 18/11: a AV S.A. se le mandó la edición del 18/11 tomada de solpresctp; no correspondía.**

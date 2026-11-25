@@ -176,6 +176,7 @@ En esos casos, además del borrador, se deja una **tarjeta en el Tablero de Pend
   - Se cuenta desde "Por escritura" hasta el final.
   - `presupuestador.py` ya usa este criterio (`CARACTERES_POR_LINEA = 85`).
 
+- **TEXTO NUEVO O CORREGIDO = RECALCULAR PRECIO (Eddy, 25/11/2026, caso CUATRO PUNTOS S.A.)**: cada vez que el cliente reenvía su texto (corregido, ampliado, con otro orden del día), se vuelve a contar líneas o temas y se compara con lo presupuestado/pagado. Si el precio sube, NO se confirma la publicación: se responde con el desglose "nuevo total − ya abonado = diferencia a abonar" y se publica recién con la diferencia pagada. Si baja o queda igual, se sigue normal. Se anota en el Pool (total nuevo, diferencia).
 - **A qué avisos aplica la regla de la línea (Hugo, 10/11/2026).**
   - **Aplica** (los clientes mandan cualquier tamaño de letra, se unifica por línea estándar): constitución, modificación de estatuto y comunicados.
   - **Asambleas: NO se cobran por línea.** Se cobran solo por la cantidad de temas a tratar del orden del día (Eddy, 10/11/2026), sin importar el largo del texto.

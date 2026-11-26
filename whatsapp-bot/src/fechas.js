@@ -43,7 +43,11 @@ export function verificarAsamblea(iso) {
   const asamblea = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
   const { fecha: hoy } = ahora()
   const inicio = proximoInicio()
-  const tentativa = 'Esta fecha es tentativa. Únicamente podremos confirmarle una fecha una vez que nos envíe su comprobante de pago.'
+  const CORREO = process.env.CORREO_AVISOS || 'diarioinformacionespy@gmail.com'
+  const tentativa = [
+    `Tenga en cuenta que la fecha en el diario se asegura únicamente con el pago, por orden de llegada.`,
+    `Para eso, envíenos el texto del aviso únicamente por correo a ${CORREO}, con la razón social, el RUC y un número de contacto. Ahí le cotizamos y, una vez que pague, le confirmamos la fecha de publicación.`,
+  ].join('\n\n')
 
   if (asamblea <= hoy) {
     return `Disculpe, el ${texto(asamblea)} ya pasó o es hoy. ¿Me confirma la fecha de la asamblea?`

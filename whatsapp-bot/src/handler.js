@@ -216,7 +216,7 @@ async function enviarEjemplares(sock, { jid, ids, principal, nombre, telefono },
   const fin = `También puede verlas y descargarlas desde nuestra página web, en la sección ARCHIVO: ${ARCHIVO_WEB}`
   await escribir(sock, jid, fin)
   anotar(principal, 'diario', `[Se le enviaron al cliente los ejemplares de "${buscado}": ${lista}]`)
-  await avisarAdmin(sock, `📰 Se enviaron ejemplares de "${buscado}" (${lista}) a: ${quien}`)
+  // Sin aviso al equipo: el envío salió bien y no requiere ninguna acción (queda en el registro del servidor).
 }
 
 export async function manejarMensaje(sock, msg) {

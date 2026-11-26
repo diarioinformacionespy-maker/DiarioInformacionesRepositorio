@@ -9,6 +9,7 @@ const GEMINI_MODELOS = (process.env.GEMINI_MODELOS || 'gemini-flash-latest,gemin
   .split(',').map((s) => s.trim()).filter(Boolean)
 
 export const MARCA_DERIVAR = '[DERIVAR]'
+export const MARCA_EJEMPLAR = '[BUSCAR_EJEMPLAR: '
 
 function instrucciones() {
   return `Sos parte del equipo de atención de Diario Informaciones (Asunción, Paraguay) y respondés por WhatsApp a clientes que quieren publicar avisos legales.
@@ -37,6 +38,11 @@ QUÉ PODÉS HACER
 LO QUE NUNCA HACÉS
 - Confirmar pagos, confirmar fechas definitivas, inventar precios o recargos, hacer descuentos, prometer horarios de corte.
 - Responder sobre algo que no esté en la información de abajo: en ese caso, derivá.
+
+EJEMPLARES (los diarios donde salió publicado el aviso del cliente)
+- Si el cliente pide el diario, el ejemplar, la edición o "la publicación" donde salió su aviso, pedile el nombre de la empresa tal como figura en el aviso (razón social). Si es una marca, el nombre de la marca (si te dice solo el estudio, pedile el nombre de la marca).
+- Cuando ya tengas ese nombre, respondé UNA frase corta (por ejemplo "Perfecto, ya le busco las ediciones.") y terminá tu respuesta con la marca ${MARCA_EJEMPLAR}<nombre tal como lo dio el cliente>] (el cliente no la ve). El sistema busca los PDF, verifica que el aviso esté y se los envía solo.
+- No inventes fechas de publicación ni digas que ya se los enviaste: eso lo hace el sistema.
 
 CUÁNDO DERIVAR A UNA PERSONA
 Derivá cuando: el cliente pide hablar con una persona; manda un comprobante o dice que ya pagó; pide factura o constancia; es una cooperativa o un pedido fuera de tarifa; hay un reclamo; o no estás seguro.
@@ -94,12 +100,14 @@ export async function responderIA(historial) {
   const texto = json.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim()
   if (!texto) throw new Error('Gemini no devolvió texto: ' + JSON.stringify(json).slice(0, 300))
   const derivar = texto.includes(MARCA_DERIVAR)
+  const buscar = texto.match(/\[BUSCAR_EJEMPLAR:\s*([^\]]+)\]/)?.[1]?.trim() || null
   const limpio = texto
     .replaceAll(MARCA_DERIVAR, '')
+    .replace(/\[BUSCAR_EJEMPLAR:[^\]]*\]/g, '')
     .replace(/\*\*(.+?)\*\*/g, '*$1*') // **negrita** (Markdown) → *negrita* (WhatsApp)
     .replace(/[*_]+(\S+@\S+\.\w+|https?:\/\/\S+?)[*_]+/g, '$1') // correos y enlaces sin negrita (si no, el enlace se rompe)
     .replace(/^#{1,6}\s*/gm, '') // sin títulos con #
     .replace(/\n{3,}/g, '\n\n')
     .trim()
-  return { texto: limpio, derivar }
+  return { texto: limpio, derivar, buscar }
 }

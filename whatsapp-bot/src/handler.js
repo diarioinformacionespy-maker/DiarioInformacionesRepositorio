@@ -11,6 +11,8 @@ import {
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import * as R from './respuestas.js'
 import { responderIA } from './ia.js'
+import { buscarEjemplares, gmailConfigurado } from './gmail.js'
+import { texto as fechaTexto } from './fechas.js'
 
 const HORAS_PAUSA = Number(process.env.HORAS_PAUSA || 12)
 const ADMIN = (process.env.ADMIN_NUMBER || '').replace(/\D/g, '')
@@ -155,11 +157,66 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
     await escribir(sock, jid, r.texto)
     anotar(principal, 'diario', r.texto)
   }
+  if (r.buscar) await enviarEjemplares(sock, { jid, ids, principal, nombre, telefono }, r.buscar)
   if (r.derivar) {
     const ultimo = [...c.msgs].reverse().find((m) => m.rol === 'cliente')?.texto || ''
     await avisarAdmin(sock, `🙋 Para atender: ${contacto(nombre, telefono)}\nÚltimo mensaje: "${ultimo.slice(0, 300)}"`)
     pausar(ids)
   }
+}
+
+// ---------- ejemplares: busca en Gmail los PDF web donde salió el aviso y los envía ----------
+const ARCHIVO_WEB = 'http://www.editorialinformaciones.com/archivo'
+const fechaLarga = (iso) => fechaTexto(new Date(iso + 'T00:00:00Z'))
+
+async function enviarEjemplares(sock, { jid, ids, principal, nombre, telefono }, buscado) {
+  const quien = contacto(nombre, telefono)
+  if (!gmailConfigurado()) {
+    const t = `En breve le remitimos las ediciones por este medio.\n\nTambién puede descargarlas desde nuestra página web, en la sección ARCHIVO, eligiendo la fecha en el calendario: ${ARCHIVO_WEB}`
+    await escribir(sock, jid, t); anotar(principal, 'diario', t)
+    await avisarAdmin(sock, `📰 Pide ejemplares de "${buscado}": ${quien}\n(El bot todavía no tiene acceso al Gmail para buscarlos.)`)
+    pausar(ids)
+    return
+  }
+  let encontrados
+  try {
+    encontrados = await buscarEjemplares(buscado)
+  } catch (e) {
+    console.error('Ejemplares:', e.message)
+    await escribir(sock, jid, R.ERROR_IA); anotar(principal, 'diario', R.ERROR_IA)
+    await avisarAdmin(sock, `📰 No se pudieron buscar los ejemplares de "${buscado}" (error: ${e.message.slice(0, 120)}): ${quien}`)
+    pausar(ids)
+    return
+  }
+  console.log(`📰 ejemplares de "${buscado}" para ${telefono || principal}: ${encontrados.map((e) => e.fecha).join(', ') || 'ninguno'}`)
+
+  if (!encontrados.length) {
+    const c = historial(principal)
+    c.intentosEjemplar = (c.intentosEjemplar || 0) + 1
+    if (c.intentosEjemplar >= 2) {
+      const t = `No logro ubicarla por este medio. Ya le paso su pedido al equipo para que le remita las ediciones a la brevedad.`
+      await escribir(sock, jid, t); anotar(principal, 'diario', t)
+      await avisarAdmin(sock, `📰 No encontré ejemplares de "${buscado}" (2 intentos): ${quien}`)
+      pausar(ids)
+    } else {
+      const t = `No encontré publicaciones con el nombre "${buscado}" en las ediciones de los últimos meses.\n\n¿Me podría confirmar el nombre exacto como figura en el aviso? Si salió hoy o ayer, puede que la edición web todavía no esté disponible.`
+      await escribir(sock, jid, t); anotar(principal, 'diario', t)
+    }
+    guardar()
+    return
+  }
+
+  const dias = encontrados.map((e) => fechaLarga(e.fecha))
+  const lista = dias.length === 1 ? dias[0] : dias.slice(0, -1).join(', ') + ' y ' + dias.at(-1)
+  await escribir(sock, jid, `Encontré su publicación: salió el ${lista}. Ya le envío ${encontrados.length === 1 ? 'la edición' : 'las ediciones'}.`)
+  for (const e of encontrados) {
+    await sock.sendMessage(jid, { document: e.pdf, mimetype: 'application/pdf', fileName: e.nombre })
+    await pausa(1200)
+  }
+  const fin = `También puede verlas y descargarlas desde nuestra página web, en la sección ARCHIVO: ${ARCHIVO_WEB}`
+  await escribir(sock, jid, fin)
+  anotar(principal, 'diario', `[Se le enviaron al cliente los ejemplares de "${buscado}": ${lista}]`)
+  await avisarAdmin(sock, `📰 Se enviaron ejemplares de "${buscado}" (${lista}) a: ${quien}`)
 }
 
 export async function manejarMensaje(sock, msg) {

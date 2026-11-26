@@ -3,3 +3,4 @@ auth/
 data/
 .env
 logs/
+google/

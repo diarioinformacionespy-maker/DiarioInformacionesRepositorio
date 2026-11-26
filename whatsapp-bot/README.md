@@ -127,6 +127,11 @@ pm2 restart whatsapp-bot
 
 Este repositorio es público, así que en `src/respuestas.js` (opción 5, "Cómo pagar") los datos de la cuenta figuran como `COMPLETAR`. La versión real, con los datos completos, está solo en el servidor. Si se reinstala desde este repositorio, hay que completarlos antes de arrancar el bot.
 
-### Versión con IA (pendiente)
+### Versión con IA (activa desde el 26/11/2026)
 
-`conocimiento.md` tiene lo que el bot podrá responder con IA (tarifas, requisitos, plazos y límites). Falta la API key de Anthropic y conectar el código.
+- Sin menú: responde conversando, con la información de `conocimiento.md` (tarifas, requisitos, plazos, pago) y la fecha tentativa calculada con las reglas del Pool (`src/fechas.js`).
+- Por WhatsApp solo da estimativos: siempre pide que el texto del aviso se mande por correo a diarioinformacionespy@gmail.com para el presupuesto formal.
+- Responde en varios mensajes cortos, con "escribiendo…" entre cada uno.
+- Deriva a una persona (avisa a `ADMIN_NUMBER` y pausa el chat) cuando piden hablar con alguien, mandan archivos o comprobantes, piden factura, cooperativas, reclamos o dudas.
+- IA: Gemini, plan gratis (`src/ia.js`), con varios modelos de respaldo si uno está saturado. **Pendiente: pasar a Claude**: en el plan gratis Google puede usar las conversaciones para entrenar su IA.
+- En `conocimiento.md` los datos bancarios figuran como `COMPLETAR`; la versión real está solo en el servidor.

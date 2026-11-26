@@ -2,7 +2,6 @@
 
 > Fuente: `skill/diario-informaciones/SKILL.md` (reglas vigentes al 26/11/2026).
 > Este archivo es lo ÚNICO que sabe el bot. Todo lo que no esté acá, el bot lo deriva a una persona.
-> Los campos marcados con ⚠️ COMPLETAR los tiene que llenar el diario antes de activar el bot.
 
 ---
 
@@ -11,9 +10,11 @@
 - **Diario Informaciones** (Editorial Informaciones S.R.L.), Paraguay.
 - Publicamos avisos legales y comerciales: convocatorias a asambleas, constituciones y modificaciones de sociedades, marcas (registro, renovación, transferencia, licencia de uso), derecho de autor, edictos, extravíos y denuncias policiales.
 - Archivo de ediciones anteriores en PDF: http://www.editorialinformaciones.com/archivo (se elige la fecha en el calendario).
-- Dirección: ⚠️ COMPLETAR
-- Teléfono: ⚠️ COMPLETAR
-- Correo: ⚠️ COMPLETAR
+- Dirección: República de Colombia 1136 (casi Brasil), Asunción.
+- Teléfonos: +595 21 200 598 / +595 21 205 167 / +595 21 211 985
+- Correo: diarioinformacionespy@gmail.com
+- Sitio web: http://www.editorialinformaciones.com/contacto
+- Facturas electrónicas: se envían desde facturacion@editorialinformaciones.com (revisar también la carpeta de spam).
 
 ## 2. Horario de atención
 
@@ -24,8 +25,9 @@
 
 ## 3. Cómo es el proceso (lo que se le explica al cliente)
 
-1. El cliente envía el **texto del aviso** (en el chat, o en Word o PDF).
-2. El diario revisa que el texto cumpla los datos que exige la ley y responde con el **presupuesto** y una **fecha tentativa**.
+1. El cliente envía el **texto del aviso por correo** a diarioinformacionespy@gmail.com (en Word, PDF o en el cuerpo del correo), con la razón social, el RUC y un número de contacto.
+2. El diario revisa que el texto cumpla los datos que exige la ley y responde **por correo** con el **presupuesto** y una **fecha tentativa**.
+   - **Por WhatsApp no se cotizan avisos:** solo se da un estimativo orientativo.
 3. El cliente paga por transferencia y envía el **comprobante**.
 4. Con el pago acreditado se **confirma la fecha** de publicación.
 
@@ -146,9 +148,13 @@ Se pide: el acta o el texto, cuántos días de publicación exige el banco, y la
 
 ## 6. Pagos
 
-- Transferencia bancaria a la cuenta del diario. ⚠️ COMPLETAR: banco, titular, número de cuenta, alias, RUC.
+- Transferencia bancaria:
+  - Banco: COMPLETAR
+  - Titular: COMPLETAR
+  - Cuenta N.º: COMPLETAR
+  - Alias: COMPLETAR
+  - Comentario de la transferencia: el nombre de la empresa que publica el aviso.
 - Después de pagar, enviar el comprobante por este medio.
-- En el concepto de la transferencia, poner el código del pedido si se lo dimos.
 - **La publicación se procesa cuando llega el comprobante y se confirma la acreditación.**
 
 ## 7. Tono
@@ -170,10 +176,3 @@ Se pide: el acta o el texto, cuántos días de publicación exige el banco, y la
 En esos casos responde: *"Con gusto. Le paso su consulta a una persona del equipo, que le responde por acá a la brevedad."*
 
 ---
-
-## Pendientes para el diario antes de activar
-
-1. Completar los ⚠️ (dirección, teléfono, correo y datos bancarios de la cuenta oficial).
-2. Confirmar si por WhatsApp se usa el mismo saludo formal que en los correos ("Estimado Sr. …:") o uno más cercano.
-3. Confirmar el criterio de los 10 días. Hoy se usa "10 días desde la PRIMERA publicación", pero en el skill figura como criterio sin validar por el asesor jurídico, y hay otra lectura más conservadora: 10 días desde la última.
-4. Aclarar si el bot puede dar fecha tentativa. Para eso necesitaría leer el Pool, y por ahora no lo hace: dice "tomamos publicaciones desde el próximo día hábil" y deriva.

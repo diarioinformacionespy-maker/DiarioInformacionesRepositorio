@@ -10,6 +10,7 @@ const GEMINI_MODELOS = (process.env.GEMINI_MODELOS || 'gemini-flash-latest,gemin
 
 export const MARCA_DERIVAR = '[DERIVAR]'
 export const MARCA_EJEMPLAR = '[BUSCAR_EJEMPLAR: '
+export const MARCA_ASAMBLEA = '[VERIFICAR_ASAMBLEA: '
 
 function instrucciones() {
   return `Sos parte del equipo de atención de Diario Informaciones (Asunción, Paraguay) y respondés por WhatsApp a clientes que quieren publicar avisos legales.
@@ -42,6 +43,11 @@ QUÉ PODÉS HACER
 LO QUE NUNCA HACÉS
 - Confirmar pagos, confirmar fechas definitivas, inventar precios o recargos, hacer descuentos, prometer horarios de corte.
 - Responder sobre algo que no esté en la información de abajo: en ese caso, derivá.
+
+FECHA DE LA ASAMBLEA (verificación de los 10 días)
+- Cuando el cliente quiere publicar una convocatoria a asamblea y todavía no dijo para qué fecha es, preguntale: "¿Para qué fecha es su asamblea?".
+- Cuando te diga la fecha, NO hagas la cuenta vos: respondé una frase corta (por ejemplo "Déjeme verificar.") y terminá con la marca ${MARCA_ASAMBLEA}aaaa-mm-dd] con la fecha de la asamblea (usá el año correcto según la fecha de hoy que figura en FECHAS). El sistema calcula si cumple el plazo y le responde.
+- Si la entidad no es una sociedad anónima (cooperativa, asociación, club), aclará que el plazo depende de sus estatutos y que el equipo lo confirma; igual podés hacer la verificación como referencia.
 
 EJEMPLARES (los diarios donde salió publicado el aviso del cliente)
 - Si el cliente pide el diario, el ejemplar, la edición o "la publicación" donde salió su aviso, pedile el nombre de la empresa tal como figura en el aviso (razón social). Si es una marca, el nombre de la marca (si te dice solo el estudio, pedile el nombre de la marca).
@@ -105,13 +111,15 @@ export async function responderIA(historial) {
   if (!texto) throw new Error('Gemini no devolvió texto: ' + JSON.stringify(json).slice(0, 300))
   const derivar = texto.includes(MARCA_DERIVAR)
   const buscar = texto.match(/\[BUSCAR_EJEMPLAR:\s*([^\]]+)\]/)?.[1]?.trim() || null
+  const asamblea = texto.match(/\[VERIFICAR_ASAMBLEA:\s*(\d{4}-\d{2}-\d{2})\s*\]/)?.[1] || null
   const limpio = texto
     .replaceAll(MARCA_DERIVAR, '')
     .replace(/\[BUSCAR_EJEMPLAR:[^\]]*\]/g, '')
+    .replace(/\[VERIFICAR_ASAMBLEA:[^\]]*\]/g, '')
     .replace(/\*\*(.+?)\*\*/g, '*$1*') // **negrita** (Markdown) → *negrita* (WhatsApp)
     .replace(/[*_]+(\S+@\S+\.\w+|https?:\/\/\S+?)[*_]+/g, '$1') // correos y enlaces sin negrita (si no, el enlace se rompe)
     .replace(/^#{1,6}\s*/gm, '') // sin títulos con #
     .replace(/\n{3,}/g, '\n\n')
     .trim()
-  return { texto: limpio, derivar, buscar }
+  return { texto: limpio, derivar, buscar, asamblea }
 }

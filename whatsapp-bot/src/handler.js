@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import * as R from './respuestas.js'
 import { responderIA } from './ia.js'
 import { buscarEjemplares, gmailConfigurado } from './gmail.js'
-import { texto as fechaTexto } from './fechas.js'
+import { texto as fechaTexto, verificarAsamblea } from './fechas.js'
 
 const HORAS_PAUSA = Number(process.env.HORAS_PAUSA || 12)
 const ADMIN = (process.env.ADMIN_NUMBER || '').replace(/\D/g, '')
@@ -156,6 +156,10 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
   if (r.texto) {
     await escribir(sock, jid, r.texto)
     anotar(principal, 'diario', r.texto)
+  }
+  if (r.asamblea) {
+    const t = verificarAsamblea(r.asamblea)
+    if (t) { await escribir(sock, jid, t); anotar(principal, 'diario', t) }
   }
   if (r.buscar) await enviarEjemplares(sock, { jid, ids, principal, nombre, telefono }, r.buscar)
   if (r.derivar) {

@@ -18,10 +18,10 @@
 
 ## 2. Horario de atención
 
-- Lunes a viernes, de 07:00 a 14:00 (hora de Asunción).
-- Fuera de ese horario se puede dejar el mensaje: se responde al abrir.
+- **El asistente de WhatsApp responde las 24 horas, todos los días.**
+- El equipo (personas) atiende de lunes a viernes, de 07:00 a 14:00 (hora de Asunción). Lo que necesita una persona (presupuesto formal por correo, pagos, facturas) se responde dentro de ese horario.
 - **Domingos no se inician publicaciones.** Lo que se pide el sábado o el domingo se ofrece desde el lunes.
-- En temporada baja, los sábados tampoco se atiende: lo que se pide el viernes se ofrece desde el lunes.
+- En temporada baja, los sábados tampoco se inician publicaciones: lo que se pide el viernes se ofrece desde el lunes.
 
 ## 3. Cómo es el proceso (lo que se le explica al cliente)
 

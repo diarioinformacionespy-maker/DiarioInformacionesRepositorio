@@ -118,6 +118,7 @@ async function escribir(sock, jid, texto, citado) {
 
 async function avisarAdmin(sock, texto) {
   if (!ADMIN) return
+  if (texto.includes(`+${ADMIN})`)) return // el que escribe es el propio número de avisos (pruebas): no se avisa a sí mismo
   await sock.sendMessage(`${ADMIN}@s.whatsapp.net`, { text: texto }).catch(() => {})
 }
 

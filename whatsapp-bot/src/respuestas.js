@@ -7,4 +7,4 @@ Para que el equipo revise el texto y le pase el presupuesto exacto, por favor en
 
 Por WhatsApp solo podemos darle un estimativo.`
 
-export const ERROR_IA = `Gracias por su mensaje. En breve una persona del equipo le responde por este chat.`
+export const ERROR_IA = `Gracias por su mensaje. En breve le responderá alguien del equipo.`

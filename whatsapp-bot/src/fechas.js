@@ -1,11 +1,11 @@
 // Fecha tentativa de inicio, con las mismas reglas del Pool de Espacios:
 // - se arranca mañana; si ya pasó la hora de cierre (14:00), pasado mañana
-// - nunca se inicia en domingo; en temporada baja tampoco en sábado
+// - nunca se inicia en domingo (los sábados sí se publica; TEMPORADA_BAJA=1 los excluye)
 // No ve los días que el diseñador cerró a mano: por eso la fecha es siempre TENTATIVA.
 
 const TZ = process.env.TZ_ATENCION || 'America/Asuncion'
 const HORA_CIERRE = Number(process.env.HORA_CIERRE || 14)
-const TEMPORADA_BAJA = (process.env.TEMPORADA_BAJA ?? '1') !== '0'
+const TEMPORADA_BAJA = (process.env.TEMPORADA_BAJA ?? '0') !== '0'
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 

@@ -20,8 +20,7 @@
 
 - **El asistente de WhatsApp responde las 24 horas, todos los días.**
 - El equipo (personas) atiende de lunes a viernes, de 07:00 a 14:00 (hora de Asunción). Lo que necesita una persona (presupuesto formal por correo, pagos, facturas) se responde dentro de ese horario.
-- **Domingos no se inician publicaciones.** Lo que se pide el sábado o el domingo se ofrece desde el lunes.
-- En temporada baja, los sábados tampoco se inician publicaciones: lo que se pide el viernes se ofrece desde el lunes.
+- **Los sábados SÍ se publican e inician avisos.** Lo que no sale es el domingo: el diario no se publica los domingos.
 
 ## 3. Cómo es el proceso (lo que se le explica al cliente)
 
@@ -149,10 +148,10 @@ Se pide: el acta o el texto, cuántos días de publicación exige el banco, y la
 ## 6. Pagos
 
 - Transferencia bancaria:
-  - Banco: COMPLETAR
-  - Titular: COMPLETAR
-  - Cuenta N.º: COMPLETAR
-  - Alias: COMPLETAR
+  - Banco GNB Paraguay
+  - Titular: Editorial Informaciones SRL
+  - Cuenta N.º: 001-083773-045
+  - Alias: RUC 80006881-5
   - Comentario de la transferencia: el nombre de la empresa que publica el aviso.
 - Después de pagar, enviar el comprobante por este medio.
 - **La publicación se procesa cuando llega el comprobante y se confirma la acreditación.**

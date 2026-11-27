@@ -91,16 +91,28 @@ function extraerTexto(message) {
 }
 
 // Parte la respuesta en mensajes cortos (un párrafo por mensaje, máximo 5) para que parezca una persona escribiendo
-export function partir(texto, max = 2) {
-  const partes = texto.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)
-  // un párrafo muy corto ("Hola.") se junta con el siguiente
-  const juntas = []
-  for (const p of partes) {
-    const ult = juntas.at(-1)
-    if (ult && ult.length < 25) juntas[juntas.length - 1] = ult + ' ' + p
-    else juntas.push(p)
+// Parte la respuesta en mensajes cortos, frase por frase, como escribe una persona en WhatsApp.
+const ABREV = /\b(Sr|Sra|Srta|Dr|Dra|Lic|Ing|Abg|Gs|N\.º|Nro|Art|S\.A|S\.R\.L)\.$/i
+export function partir(texto, max = 3) {
+  const frases = []
+  for (const parrafo of texto.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)) {
+    // corta después de . ? ! cuando sigue una frase nueva (mayúscula, ¿ o ¡)
+    const trozos = parrafo.split(/(?<=[.?!])\s+(?=[¿¡A-ZÁÉÍÓÚÑ])/)
+    let actual = ''
+    for (const t of trozos) {
+      actual = actual ? actual + ' ' + t : t
+      if (!ABREV.test(actual)) { frases.push(actual); actual = '' }
+    }
+    if (actual) frases.push(actual)
   }
-  while (juntas.length > max) juntas.splice(-2, 2, juntas.at(-2) + '\n\n' + juntas.at(-1))
+  // una frase muy corta ("Perfecto.") se junta con la siguiente
+  const juntas = []
+  for (const f of frases) {
+    const ult = juntas.at(-1)
+    if (ult && ult.length < 25) juntas[juntas.length - 1] = ult + ' ' + f
+    else juntas.push(f)
+  }
+  while (juntas.length > max) juntas.splice(-2, 2, juntas.at(-2) + ' ' + juntas.at(-1))
   return juntas
 }
 

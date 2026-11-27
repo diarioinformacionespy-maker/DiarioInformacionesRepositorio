@@ -44,22 +44,13 @@ export function verificarAsamblea(iso) {
   const { fecha: hoy } = ahora()
   const inicio = proximoInicio()
   const CORREO = process.env.CORREO_AVISOS || 'diarioinformacionespy@gmail.com'
-  const tentativa = [
-    `Tenga en cuenta que la fecha en el diario se asegura únicamente con el pago, por orden de llegada.`,
-    `Para eso, envíenos el texto del aviso únicamente por correo a ${CORREO}, con la razón social, el RUC y un número de contacto. Ahí le cotizamos y, una vez que pague, le confirmamos la fecha de publicación.`,
-  ].join('\n\n')
+  const pregunta = `¿Ya tiene el texto para enviarlo a ${CORREO}?`
 
-  if (asamblea <= hoy) {
-    return `Disculpe, el ${texto(asamblea)} ya pasó o es hoy. ¿Me confirma la fecha de la asamblea?`
-  }
+  if (asamblea <= hoy) return `Esa fecha ya pasó. ¿Me confirma para qué fecha es su asamblea?`
 
   const minima = sumar(inicio, MIN_DIAS)
   if (asamblea < minima) {
-    return [
-      `Nosotros tenemos espacio en el diario a partir del ${texto(inicio)}.`,
-      `Con esa fecha, la asamblea tendría que ser el ${texto(minima)} o después, porque la ley exige al menos ${MIN_DIAS} días desde la primera publicación. Para el ${texto(asamblea)} no llegaríamos a cumplir ese plazo.`,
-      `Le sugerimos consultar la posibilidad de reprogramar la asamblea para el ${texto(minima)} o una fecha posterior. Con gusto verificamos de nuevo con la fecha nueva.`,
-    ].join('\n\n')
+    return `Tenemos lugar desde el ${texto(inicio)}, así que la asamblea tendría que ser el ${texto(minima)} o después (la ley pide ${MIN_DIAS} días desde la primera publicación). ¿Podrían pasarla a esa fecha?`
   }
 
   // Si la asamblea está muy lejos, se empieza más tarde para no superar los 30 días de anticipación
@@ -69,13 +60,10 @@ export function verificarAsamblea(iso) {
     while (!puedeIniciar(desde)) desde = sumar(desde, 1)
   }
   const hasta = sumar(desde, DIAS_PUB - 1)
-  const lejos = desde > inicio
-  return [
-    lejos
-      ? `Su asamblea del ${texto(asamblea)} está a más de ${MAX_DIAS} días, así que conviene empezar a publicar el ${texto(desde)} (del ${corta(desde)} al ${corta(hasta)}), para no pasarnos de la anticipación máxima.`
-      : `Perfecto: tenemos espacio a partir del ${texto(desde)}. Si publicamos del ${corta(desde)} al ${corta(hasta)} (5 días), su asamblea del ${texto(asamblea)} cumple los ${MIN_DIAS} días de anticipación que exige la ley.`,
-    tentativa,
-  ].join('\n\n')
+  if (desde > inicio) {
+    return `Para su asamblea del ${texto(asamblea)} conviene publicar del ${texto(desde)} al ${texto(hasta)}, así no pasamos los ${MAX_DIAS} días; la fecha se asegura con el pago. ${pregunta}`
+  }
+  return `Perfecto: saliendo del ${texto(desde)} al ${texto(hasta)}, su asamblea del ${texto(asamblea)} cumple los ${MIN_DIAS} días; la fecha se asegura con el pago. ${pregunta}`
 }
 
 // Contexto de fechas para la IA

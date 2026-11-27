@@ -91,7 +91,7 @@ function extraerTexto(message) {
 }
 
 // Parte la respuesta en mensajes cortos (un párrafo por mensaje, máximo 5) para que parezca una persona escribiendo
-export function partir(texto, max = 5) {
+export function partir(texto, max = 2) {
   const partes = texto.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)
   // un párrafo muy corto ("Hola.") se junta con el siguiente
   const juntas = []
@@ -202,12 +202,12 @@ async function enviarEjemplares(sock, { jid, ids, principal, nombre, telefono },
     const c = historial(principal)
     c.intentosEjemplar = (c.intentosEjemplar || 0) + 1
     if (c.intentosEjemplar >= 2) {
-      const t = `No logro ubicarla por este medio. Ya le paso su pedido al equipo para que le remita las ediciones a la brevedad.`
+      const t = `No logro ubicarla por acá; ya le paso su pedido al equipo para que le envíe las ediciones.`
       await escribir(sock, jid, t); anotar(principal, 'diario', t)
       await avisarAdmin(sock, `📰 No encontré ejemplares de "${buscado}" (2 intentos): ${quien}`)
       pausar(ids)
     } else {
-      const t = `No encontré publicaciones con el nombre "${buscado}" en las ediciones de los últimos meses.\n\n¿Me podría confirmar el nombre exacto como figura en el aviso? Si salió hoy o ayer, puede que la edición web todavía no esté disponible.`
+      const t = `No encontré publicaciones con el nombre "${buscado}". ¿Me confirma el nombre exacto como figura en el aviso?`
       await escribir(sock, jid, t); anotar(principal, 'diario', t)
     }
     guardar()
@@ -216,12 +216,12 @@ async function enviarEjemplares(sock, { jid, ids, principal, nombre, telefono },
 
   const dias = encontrados.map((e) => fechaLarga(e.fecha))
   const lista = dias.length === 1 ? dias[0] : dias.slice(0, -1).join(', ') + ' y ' + dias.at(-1)
-  await escribir(sock, jid, `Encontré su publicación: salió el ${lista}. Ya le envío ${encontrados.length === 1 ? 'la edición' : 'las ediciones'}.`)
+  await escribir(sock, jid, `La encontré: salió el ${lista}. Ya le envío ${encontrados.length === 1 ? 'la edición' : 'las ediciones'}.`)
   for (const e of encontrados) {
     await sock.sendMessage(jid, { document: e.pdf, mimetype: 'application/pdf', fileName: e.nombre })
     await pausa(1200)
   }
-  const fin = `También puede verlas y descargarlas desde nuestra página web, en la sección ARCHIVO: ${ARCHIVO_WEB}`
+  const fin = `Listo. También las tiene en nuestra web, sección ARCHIVO: ${ARCHIVO_WEB}`
   await escribir(sock, jid, fin)
   anotar(principal, 'diario', `[Se le enviaron al cliente los ejemplares de "${buscado}": ${lista}]`)
   // Sin aviso al equipo: el envío salió bien y no requiere ninguna acción (queda en el registro del servidor).

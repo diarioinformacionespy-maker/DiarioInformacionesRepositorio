@@ -83,7 +83,7 @@ export function contextoFechas() {
 // El estado del Pool lo deja data/pool.json: { "actualizado": ISO, "dias": { "aaaa-mm-dd": "abierto"|"casi"|"lleno"|"cerrado" } }
 // Si el archivo no está o tiene más de POOL_MAX_MIN minutos, el bot NO dice si hay lugar: lo deja al equipo.
 import { readFileSync } from 'node:fs'
-const POOL_MAX_MIN = Number(process.env.POOL_MAX_MIN || 40)
+const POOL_MAX_MIN = Number(process.env.POOL_MAX_MIN || 180) // la copia del Pool se regenera cada 30 min en horario hábil
 function leerPool() {
   try {
     const p = JSON.parse(readFileSync('./data/pool.json', 'utf8'))

@@ -16,7 +16,7 @@ import { responderIA, transcribirAudio } from './ia.js'
 import { buscarEjemplares, gmailConfigurado } from './gmail.js'
 import { texto as fechaTexto, verificarAsamblea, ahora } from './fechas.js'
 
-const HORAS_PAUSA = Number(process.env.HORAS_PAUSA || 12)
+const HORAS_PAUSA = Number(process.env.HORAS_PAUSA ?? 12)
 const ADMIN = (process.env.ADMIN_NUMBER || '').replace(/\D/g, '')
 const ESPERA_MS = Number(process.env.ESPERA_MS ?? 5000) // junta los mensajes seguidos del cliente antes de responder
 const MAX_HISTORIAL = 30
@@ -169,7 +169,7 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
     await escribir(sock, jid, R.ERROR_IA)
     await avisarAdmin(sock, `⚠️ El asistente no pudo responder (error de la IA): ${contacto(nombre, telefono)}`)
     // Un error de la IA suele ser pasajero (modelo saturado): pausa corta, no las 12 h de cuando atiende una persona
-    pausar(ids, Number(process.env.HORAS_PAUSA_ERROR || 0.5))
+    pausar(ids, Number(process.env.HORAS_PAUSA_ERROR ?? 0.5))
     return
   }
   if (enPausa(ids)) return // alguien del equipo respondió mientras la IA pensaba

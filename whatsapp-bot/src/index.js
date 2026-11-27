@@ -15,6 +15,7 @@ const PAIRING_NUMBER = (process.env.PAIRING_NUMBER || '').replace(/\D/g, '')
 import { crearEtiquetas } from './etiquetas.js'
 import { iniciarPool } from './pool.js'
 import { iniciarAlertas } from './alertas.js'
+import { iniciarCierre } from './cierre.js'
 const logger = pino({ level: process.env.LOG_LEVEL || 'warn' })
 
 let reintentos = 0
@@ -59,6 +60,7 @@ async function iniciar() {
       setTimeout(() => crearEtiquetas(sock), 10000) // cuando terminó de sincronizar
       iniciarPool()
       iniciarAlertas(sock)
+      iniciarCierre(sock)
     }
 
     if (connection === 'close') {

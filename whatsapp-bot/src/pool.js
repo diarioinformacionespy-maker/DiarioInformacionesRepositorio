@@ -11,6 +11,8 @@ const CARPETA = process.env.POOL_CARPETA_ID || '1bHbb1GXcfaVdWf8A862kWX0fJnyj6U0
 const NOMBRE = 'POOL_ACTUAL.json'
 const CADA_MS = 5 * 60_000
 let iniciado = false, ultimoError = '', ultimoId = '', ultimoMod = ''
+let ultimoPool = null // el Pool completo, en memoria (para el cierre del día); no se guarda en disco
+export const poolCompleto = () => ultimoPool
 
 async function drive(ruta) {
   const res = await fetch('https://www.googleapis.com/drive/v3/' + ruta, {
@@ -51,6 +53,7 @@ export async function actualizarPool() {
   const pool = JSON.parse((await (await drive(`files/${f.id}?alt=media`)).text()).replace(/^﻿/, ''))
   const p = { actualizado: pool.actualizado || f.modifiedTime, dias: estados(pool) }
   writeFileSync('./data/pool.json', JSON.stringify(p))
+  ultimoPool = { ...pool, leido: f.modifiedTime }
   ultimoId = f.id; ultimoMod = f.modifiedTime
   return p
 }

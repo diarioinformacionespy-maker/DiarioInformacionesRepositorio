@@ -1,5 +1,15 @@
 /**
  * Diario Informaciones - Copia automática de adjuntos de clientes a Drive.
+ * Versión 4 (27/11/2026):
+ *  1) copiarAdjuntos ya NO procesa mensajes de más de 3 días (cuando un hilo viejo recibe una
+ *     respuesta nueva, los mensajes viejos se marcan como hechos y no crean carpetas de días pasados).
+ *  2) Nueva ordenarSueltos(simular): (A) mueve a ORIGINALES/<día> los archivos de clientes sueltos en
+ *     la raíz de Mi unidad (guardados a mano con "Añadir a Drive", creados desde el 01/11/2026), sin
+ *     tocar Google Docs/Sheets, carpetas, banners/firmas ni "DIARIO ..."; (B) reubica los archivos de
+ *     carpetas de día cuyo nombre es 7+ días anterior a su creación (p. ej. 2026-07-24) en la carpeta
+ *     del día en que se crearon, y manda a la papelera la carpeta vacía. Nunca borra archivos.
+ *     CÓMO CORRER: primero ordenarSueltosPrueba (simula, revisar el registro con Ver > Registros),
+ *     y si todo está bien, ordenarSueltosAhora (mueve de verdad).
  * Versión 3 (15/11/2026): todo se guarda en "Adjuntos clientes/ORIGINALES/<día>" y también
  *  el TEXTO de un aviso escrito directo en el correo (archivo "… - TEXTO DEL CORREO.txt").
  *  La IA guarda los corregidos en "ORIGINALES/CORREGIDOS".
@@ -39,6 +49,7 @@ function copiarAdjuntos() {
   if (!lock.tryLock(10000)) return;
   try {
     var hechos = leerHechos_();
+    var limiteViejo = new Date().getTime() - 3 * 24 * 3600 * 1000;   // v4: no reprocesar mensajes de más de 3 días
     var raiz = carpeta_(carpeta_(DriveApp.getRootFolder(), CARPETA), SUB);
     var label = GmailApp.getUserLabelByName(ETIQUETA) || GmailApp.createLabel(ETIQUETA);
     var labelSin = GmailApp.getUserLabelByName(ETIQUETA_SIN_ACCESO) || GmailApp.createLabel(ETIQUETA_SIN_ACCESO);
@@ -50,6 +61,7 @@ function copiarAdjuntos() {
       hilo.getMessages().forEach(function (msj) {
         var id = msj.getId();
         if (hechos[id]) return;                                   // ya procesado
+        if (msj.getDate().getTime() < limiteViejo) { hechos[id] = 1; return; }   // mensaje viejo de un hilo reactivado
         var de = msj.getFrom().toLowerCase();
         if (IGNORAR.some(function (x) { return de.indexOf(x) >= 0; })) { hechos[id] = 1; return; }
         if (msj.getFrom().toLowerCase().indexOf('diarioinformacionespy') >= 0) { hechos[id] = 1; return; }
@@ -156,4 +168,68 @@ function limpiarDuplicados() {
 function carpeta_(padre, nombre) {
   var it = padre.getFoldersByName(nombre);
   return it.hasNext() ? it.next() : padre.createFolder(nombre);
+}
+
+/** Selecciones para el menú Ejecutar del editor de Apps Script. */
+function ordenarSueltosPrueba() { ordenarSueltos(true); }
+function ordenarSueltosAhora() { ordenarSueltos(false); }
+
+/**
+ * v4: ordena archivos de clientes. Sin argumentos SIMULA (no mueve nada, solo registra).
+ * A) archivos sueltos en la raíz de Mi unidad -> ORIGINALES/<día de creación>.
+ * B) carpetas de día "viejas" (nombre 7+ días anterior a su creación) -> reubica sus archivos.
+ * Nunca borra archivos; solo los mueve (y manda a la papelera la carpeta de día que queda vacía).
+ */
+function ordenarSueltos(simular) {
+  if (simular === undefined) simular = true;
+  var TZ = 'America/Asuncion';
+  var EXT_EXTRA = ['jfif', 'eml', 'doc', 'rtf'];
+  var DESDE = new Date('2026-11-01T00:00:00-03:00').getTime();
+  var marca = simular ? ' (simulado)' : '';
+  var raiz = carpeta_(carpeta_(DriveApp.getRootFolder(), CARPETA), SUB);
+  var movidosA = 0, movidosB = 0, omitidos = 0, vaciasB = 0;
+
+  // Parte A: archivos sueltos en la raíz de Mi unidad
+  var candidatos = [], it = DriveApp.getRootFolder().getFiles();
+  while (it.hasNext()) candidatos.push(it.next());
+  candidatos.forEach(function (f) {
+    var titulo = f.getName();
+    if (f.getMimeType().indexOf('application/vnd.google-apps') === 0) { omitidos++; return; }
+    if (/banner|header|signature/i.test(titulo) || titulo === 'USAR ESTE.png' || titulo.indexOf('DIARIO ') === 0) { omitidos++; return; }
+    var ext = (titulo.split('.').pop() || '').toLowerCase();
+    if (TIPOS.indexOf(ext) < 0 && EXT_EXTRA.indexOf(ext) < 0) { omitidos++; return; }
+    if (f.getDateCreated().getTime() < DESDE) { omitidos++; return; }
+    var dia = Utilities.formatDate(f.getDateCreated(), TZ, 'yyyy-MM-dd');
+    Logger.log('MOVER ' + titulo + ' -> ORIGINALES/' + dia + marca);
+    if (!simular) f.moveTo(carpeta_(raiz, dia));
+    movidosA++;
+  });
+
+  // Parte B: carpetas de día cuyo nombre es muy anterior a su creación
+  var dias = [], fit = raiz.getFolders();
+  while (fit.hasNext()) dias.push(fit.next());
+  dias.forEach(function (carp) {
+    var nombre = carp.getName();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(nombre)) return;
+    var fechaNombre = new Date(nombre + 'T12:00:00-03:00').getTime();
+    if (isNaN(fechaNombre)) return;
+    if (carp.getDateCreated().getTime() - fechaNombre <= 7 * 24 * 3600 * 1000) return;
+    var archivos = [], ai = carp.getFiles();
+    while (ai.hasNext()) archivos.push(ai.next());
+    archivos.forEach(function (f) {
+      var dia = Utilities.formatDate(f.getDateCreated(), TZ, 'yyyy-MM-dd');
+      if (dia === nombre) return;   // ya está en su carpeta
+      Logger.log('MOVER ' + f.getName() + ' -> ORIGINALES/' + dia + marca + ' (desde ' + nombre + ')');
+      if (!simular) f.moveTo(carpeta_(raiz, dia));
+      movidosB++;
+    });
+    if (!simular && !carp.getFiles().hasNext() && !carp.getFolders().hasNext()) {
+      carp.setTrashed(true);
+      vaciasB++;
+      Logger.log('CARPETA VACÍA A LA PAPELERA ' + nombre);
+    }
+  });
+
+  Logger.log('RESUMEN' + marca + ': sueltos movidos ' + movidosA + ' (omitidos ' + omitidos + '); ' +
+    'reubicados desde carpetas viejas ' + movidosB + '; carpetas vacías a la papelera ' + vaciasB);
 }

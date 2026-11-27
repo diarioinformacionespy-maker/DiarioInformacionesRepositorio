@@ -1,7 +1,7 @@
 // ✏️ Textos fijos que el bot usa sin pasar por la IA.
 // Lo demás lo responde la IA con la información de conocimiento.md.
 
-export const RECIBIDO = `¡Recibido, gracias! Para cotizarlo, envíelo por favor a diarioinformacionespy@gmail.com con su razón social, RUC y teléfono.`
+export const RECIBIDO = `¡Recibido, gracias! Para cotizarlo, envíelo por favor a nuestro correo oficial, diarioinformacionespy@gmail.com. ¿Podría incluir el nombre de la empresa que solicita la publicación, su RUC y un teléfono de contacto para que podamos identificar su solicitud?`
 
 export const ERROR_IA = `Gracias por su mensaje. En breve le responderá alguien del equipo.`
 

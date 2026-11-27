@@ -120,7 +120,7 @@ export function partir(texto, max = 3) {
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function escribir(sock, jid, texto, citado) {
-  const mensajes = partir(texto)
+  const mensajes = partir(texto.replace(/[¿¡]/g, '')) // sin signos de apertura, como se escribe en WhatsApp
   for (let i = 0; i < mensajes.length; i++) {
     const m = mensajes[i]
     if (!process.env.SIN_DEMORA) {

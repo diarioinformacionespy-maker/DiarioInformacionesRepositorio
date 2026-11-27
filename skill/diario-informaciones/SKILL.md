@@ -1075,6 +1075,51 @@ https://claude.ai/artifact/Kv8tDTU625WrFrJ2qAFA5S, colección `pendientes`.
   - Claude exporta la propuesta para InDesign (script .jsx o archivo IDML) con los textos ya colocados.
   - El diseñador la ajusta a su criterio; su versión final es la que vale.
 
+## Pedidos de "la publicación" y reclamos (Eddy, 27/11/2026 — caso LEMANITA)
+
+- Si el cliente pide la publicación, el link o "dónde sale": responder con las **fechas exactas** de sus ediciones y **adjuntar los PDF** de esas ediciones. Nunca mandar solo el link del archivo web (www.editorialinformaciones.com/archivo): si la edición no está cargada, el archivo muestra la fecha del día y el cliente cree que se publicó otro día.
+- Nunca contestar "RECIBIDO" a un correo que reclama, pregunta o avisa un problema. Ese hilo va a "⏸ PENDIENTE" (Label_15) + tarjeta en el Tablero + alerta de WhatsApp a Luzana.
+- Si el cliente no encuentra su edición en la web, revisar que esté subida al archivo y avisar a quien la sube.
+- Como hay que adjuntar PDF, la respuesta queda en BORRADOR con KV + Label_8 para Hugo, salvo que la nube tenga los PDF a mano.
+
+## Alertas de WhatsApp a Luzana (Eddy, 27/11/2026)
+
+**Cuándo se manda una alerta (6 casos):**
+1. 🚨 Reclamo de un cliente (fecha, texto, factura, publicación que no encuentra).
+2. ⏸ Hilo que quedó con la etiqueta "⏸ PENDIENTE" (Label_15): la IA no supo qué responder.
+3. 💳 Pago dudoso o duplicado (dos comprobantes por el mismo aviso, monto que no coincide).
+4. 📅 Asamblea que no cumple los 10 días del Art. 1082.
+5. 📅 Día cerrado con avisos ya pagados.
+6. 💳 Pago que no sabemos si entró: transferencia a la cuenta personal de Luzana (Sudameris 251416098), comprobante "en proceso", foto sin aviso del banco.
+
+Una alerta por caso y por hilo: antes de mandar, revisar en `historial` del Pool que no se haya mandado ya (registrar cada alerta en `historial` con accion "alerta_whatsapp", hilo y archivo).
+
+**Cómo se manda (bot propio, Baileys/WhatsApp Web en DigitalOcean, número del diario +595986692697; no usa plantillas de Meta):**
+- Crear un archivo de texto en la carpeta de Drive "ALERTAS WHATSAPP (bot)" (id `1d0Mxy3LS9qm2OUYtw9QjSufNC_EOEZFk`). El bot la revisa cada minuto y manda cada archivo UNA sola vez.
+- Herramienta: Google Drive `create_file` con `parentId` = `1d0Mxy3LS9qm2OUYtw9QjSufNC_EOEZFk`, `contentMimeType` = `text/plain`, `disableConversionToGoogleType` = true.
+- Nombre: `alerta_<aaaa-mm-dd_HHMM>_<cliente>.txt` (tiene que empezar con "alerta").
+- Primera línea (opcional): `PARA: 5959XXXXXXXX` (varios separados por coma). Si falta, va a todos los destinatarios cargados en el servidor. Solo se manda a números autorizados en el servidor.
+- Desde la segunda línea: el texto tal cual se ve en WhatsApp. Negrita con *un asterisco*. Links pegados como texto (https://...), sin Markdown.
+- Un archivo = una alerta. No editar ni reutilizar archivos. Las alertas de más de 24 horas no se mandan.
+- Verificación en el servidor: `pm2 logs whatsapp-bot --lines 20 --nostream | grep "alerta"` → `🔔 alerta "…" enviada a 5959…`.
+
+**Formato:**
+```
+PARA: <número de Luzana>
+<ícono> *ALERTA · DIARIO INFORMACIONES*
+<Tipo> · <🔴 Urgente | 🟠 Alta | 🟡 Media>
+
+*Cliente:* <nombre>
+*Aviso:* <tipo> · <fechas> · <código>
+*Qué pasó:* <resumen en 1-3 líneas>
+*Qué hay que hacer:* <acción concreta>
+
+📩 Abrir el correo: https://mail.google.com/mail/u/0/#all/<threadId>
+🗂 Ver en el Tablero: https://claude.ai/artifact/Kv8tDTU625WrFrJ2qAFA5S
+_Aviso automático · <día dd/mm HH:MM>_
+```
+Íconos: 🚨 reclamos · 💳 pagos · 📅 fechas/días cerrados · ⏸ pendientes. El Tablero es privado: Luzana solo lo abre si fue invitada por correo.
+
 ## Agentes del proyecto (Eddy, 17/11/2026)
 
 Copia de respaldo en `agents/` (el entorno en la nube se borra al reiniciar). Para reinstalarlos: copiar `agents/*.md` a `~/.claude/agents/` y abrir una sesión nueva.

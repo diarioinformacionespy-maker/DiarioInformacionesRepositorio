@@ -7,3 +7,4 @@ datos_pago.json
 __pycache__/
 *.pyc
 logs/
+registro.jsonl

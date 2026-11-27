@@ -1,9 +1,15 @@
-// Conexión con la IA. Hoy: Gemini (Google AI Studio). Más adelante: Claude.
+// Conexión con la IA.
+// - Respuestas: Claude (si hay ANTHROPIC_API_KEY en el .env); si Claude falla, se intenta con Gemini como respaldo.
+// - Notas de voz: Gemini (la API de Claude no recibe audio).
 import { readFileSync } from 'node:fs'
+import Anthropic from '@anthropic-ai/sdk'
 import { contextoFechas } from './fechas.js'
 
 const CONOCIMIENTO = readFileSync(new URL('../conocimiento.md', import.meta.url), 'utf8')
 const GEMINI_KEY = process.env.GEMINI_API_KEY || ''
+const CLAUDE_MODELO = process.env.CLAUDE_MODELO || 'claude-opus-5-5'
+const CLAUDE_ESFUERZO = process.env.CLAUDE_ESFUERZO || 'low' // chat corto: con "low" alcanza
+const claude = process.env.ANTHROPIC_API_KEY ? new Anthropic({ timeout: 60_000, maxRetries: 2 }) : null
 // Modelos a probar en orden: si uno está saturado (503) o sin cuota (429), se pasa al siguiente.
 const GEMINI_MODELOS = (process.env.GEMINI_MODELOS || 'gemini-3.1-flash-lite,gemini-2.5-flash,gemini-flash-lite-latest,gemini-flash-latest')
   .split(',').map((s) => s.trim()).filter(Boolean)
@@ -14,7 +20,7 @@ export const MARCA_ASAMBLEA = '[VERIFICAR_ASAMBLEA: '
 export const MARCA_UBICACION = '[UBICACION]'
 export const MARCA_DIA = '[VER_DIA: '
 
-function instrucciones(nombre) {
+function instruccionesFijas() {
   return `Sos parte del equipo de atención de Diario Informaciones (Asunción, Paraguay) y respondés por WhatsApp a clientes que quieren publicar avisos legales.
 
 CÓMO ESCRIBIR (lo más importante: que parezca una persona chateando, no un bot)
@@ -93,15 +99,19 @@ CUÁNDO DERIVAR A UNA PERSONA
 Derivá cuando: el cliente pide hablar con una persona; manda un comprobante o dice que ya pagó; pide factura o constancia; es una cooperativa o un pedido fuera de tarifa; hay un reclamo; o no estás seguro.
 Para derivar, respondé con un mensaje breve diciendo que una persona del equipo lo va a atender por este mismo chat (en horario de lunes a viernes de 07:00 a 14:00) y terminá tu respuesta con la marca ${MARCA_DERIVAR} (el cliente no la ve).
 
-CLIENTE
-Nombre de WhatsApp del cliente: ${nombre ? '"' + nombre + '"' : '(no tiene nombre)'}
-
-FECHAS
-${contextoFechas()}
-
 INFORMACIÓN DEL DIARIO
 ${CONOCIMIENTO}`
 }
+
+// Lo que cambia en cada mensaje va aparte, para que lo fijo quede en la caché de Claude.
+function instruccionesVariables(nombre) {
+  return `CLIENTE
+Nombre de WhatsApp del cliente: ${nombre ? '"' + nombre + '"' : '(no tiene nombre)'}
+
+FECHAS
+${contextoFechas()}`
+}
+const instrucciones = (nombre) => instruccionesFijas() + '\n\n' + instruccionesVariables(nombre)
 
 // historial: [{ rol: 'cliente' | 'diario', texto }]
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -160,7 +170,30 @@ export async function transcribirAudio(buffer, mimetype) {
   return t
 }
 
-export async function responderIA(historial, nombre = '') {
+async function responderClaude(historial, nombre) {
+  const mensajes = historial.map((m) => ({ role: m.rol === 'cliente' ? 'user' : 'assistant', content: m.texto }))
+  while (mensajes.length && mensajes.at(-1).role === 'assistant') mensajes.pop() // la conversación tiene que terminar en el cliente
+  const r = await claude.beta.messages.create({
+    model: CLAUDE_MODELO,
+    max_tokens: 16000,
+    betas: ['server-side-fallback-2026-07-01'],
+    fallbacks: 'default', // si el modelo declina por seguridad, la API reintenta sola con otro modelo
+    output_config: { effort: CLAUDE_ESFUERZO },
+    system: [
+      { type: 'text', text: instruccionesFijas(), cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: instruccionesVariables(nombre) },
+    ],
+    messages: mensajes,
+  })
+  if (r.stop_reason === 'refusal') throw new Error('Claude declinó responder (' + (r.stop_details?.category || 'sin categoría') + ')')
+  const texto = r.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim()
+  if (!texto) throw new Error('Claude no devolvió texto (stop_reason ' + r.stop_reason + ')')
+  const u = r.usage || {}
+  console.log(`   IA: respondió ${r.model} (entrada ${u.input_tokens}, caché ${u.cache_read_input_tokens || 0}, salida ${u.output_tokens})`)
+  return texto
+}
+
+async function responderGemini(historial, nombre) {
   if (!GEMINI_KEY) throw new Error('Falta GEMINI_API_KEY en el .env')
   const cuerpo = JSON.stringify({
     systemInstruction: { parts: [{ text: instrucciones(nombre) }] },
@@ -170,6 +203,22 @@ export async function responderIA(historial, nombre = '') {
   const json = await llamarConRespaldo(cuerpo)
   const texto = json.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim()
   if (!texto) throw new Error('Gemini no devolvió texto: ' + JSON.stringify(json).slice(0, 300))
+  return texto
+}
+
+export async function responderIA(historial, nombre = '') {
+  let texto
+  if (claude) {
+    try { texto = await responderClaude(historial, nombre) } catch (e) {
+      const detalle = e instanceof Anthropic.APIError ? `${e.status} ${e.message}` : e.message
+      console.error('   Claude:', String(detalle).slice(0, 200))
+      if (!GEMINI_KEY) throw e
+      console.error('   → se intenta con Gemini')
+      texto = await responderGemini(historial, nombre)
+    }
+  } else {
+    texto = await responderGemini(historial, nombre)
+  }
   const derivar = texto.includes(MARCA_DERIVAR)
   const ubicacion = texto.includes(MARCA_UBICACION)
   const buscar = texto.match(/\[BUSCAR_EJEMPLAR:\s*([^\]]+)\]/)?.[1]?.trim() || null

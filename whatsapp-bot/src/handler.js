@@ -149,7 +149,8 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
     console.error('IA:', e.message)
     await escribir(sock, jid, R.ERROR_IA)
     await avisarAdmin(sock, `⚠️ El asistente no pudo responder (error de la IA): ${contacto(nombre, telefono)}`)
-    pausar(ids)
+    // Un error de la IA suele ser pasajero (modelo saturado): pausa corta, no las 12 h de cuando atiende una persona
+    pausar(ids, Number(process.env.HORAS_PAUSA_ERROR || 0.5))
     return
   }
   if (enPausa(ids)) return // alguien del equipo respondió mientras la IA pensaba

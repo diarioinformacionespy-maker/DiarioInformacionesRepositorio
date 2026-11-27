@@ -5,7 +5,7 @@ import { contextoFechas } from './fechas.js'
 const CONOCIMIENTO = readFileSync(new URL('../conocimiento.md', import.meta.url), 'utf8')
 const GEMINI_KEY = process.env.GEMINI_API_KEY || ''
 // Modelos a probar en orden: si uno está saturado (503) o sin cuota (429), se pasa al siguiente.
-const GEMINI_MODELOS = (process.env.GEMINI_MODELOS || 'gemini-flash-latest,gemini-flash-lite-latest,gemini-2.5-flash')
+const GEMINI_MODELOS = (process.env.GEMINI_MODELOS || 'gemini-3.1-flash-lite,gemini-2.5-flash,gemini-flash-lite-latest,gemini-flash-latest')
   .split(',').map((s) => s.trim()).filter(Boolean)
 
 export const MARCA_DERIVAR = '[DERIVAR]'

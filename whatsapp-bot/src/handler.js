@@ -146,7 +146,7 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
   let r
   const t0 = Date.now()
   try {
-    r = await responderIA(c.msgs)
+    r = await responderIA(c.msgs, nombre === 'Cliente' ? '' : String(nombre).replace(/[^\p{L}\p{N} .'-]/gu, '').trim().slice(0, 40))
     console.log(`→ respuesta IA para ${telefono || principal} en ${Math.round((Date.now() - t0) / 1000)} s${r.derivar ? ' (deriva a una persona)' : ''}`)
   } catch (e) {
     console.error('IA:', e.message)

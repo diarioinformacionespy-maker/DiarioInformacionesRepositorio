@@ -11,6 +11,7 @@ import {
 } from '@whiskeysockets/baileys'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { etiquetar, quitarEtiqueta } from './etiquetas.js'
+import { esEquipo } from './alertas.js'
 import * as R from './respuestas.js'
 import { responderIA, transcribirAudio } from './ia.js'
 import { buscarEjemplares, gmailConfigurado } from './gmail.js'
@@ -312,6 +313,8 @@ export async function manejarMensaje(sock, msg) {
     pausar(ids) // un humano tomó la conversación → el bot se calla HORAS_PAUSA horas
     return
   }
+
+  if (esEquipo(telefono)) return // el equipo (destinatarios de alertas) no es un cliente: el bot no le contesta
 
   if (enPausa(ids)) {
     if (texto || audio) anotar(principal, 'cliente', texto || '[nota de voz]')

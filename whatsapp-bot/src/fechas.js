@@ -22,6 +22,22 @@ const sumar = (d, n) => new Date(d.getTime() + n * 86400000)
 export const texto = (d) => `${DIAS[d.getUTCDay()]} ${d.getUTCDate()} de ${MESES[d.getUTCMonth()]}`
 const puedeIniciar = (d) => d.getUTCDay() !== 0 && !(TEMPORADA_BAJA && d.getUTCDay() === 6)
 
+// Primer día de inicio que el Pool permite: los primeros 3 días de la publicación no pueden estar cerrados
+// (mismo criterio que la página del Pool, "dias_control"). Sin datos del Pool, el inicio por reglas.
+export function primerLibre(diasPub = DIAS_PUB) {
+  const pool = leerPool()
+  let d = proximoInicio()
+  if (!pool) return d
+  const ctl = Math.min(diasPub, 3)
+  for (let i = 0; i < 60; i++, d = sumar(d, 1)) {
+    if (!puedeIniciar(d)) continue
+    let ok = true
+    for (let k = 0; k < ctl; k++) if (pool[sumar(d, k).toISOString().slice(0, 10)] === 'cerrado') { ok = false; break }
+    if (ok) return d
+  }
+  return proximoInicio()
+}
+
 export function proximoInicio() {
   const { fecha, hora } = ahora()
   let d = sumar(fecha, hora >= HORA_CIERRE ? 2 : 1)
@@ -42,7 +58,7 @@ export function verificarAsamblea(iso) {
   if (!m) return null
   const asamblea = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
   const { fecha: hoy } = ahora()
-  const inicio = proximoInicio()
+  const inicio = primerLibre()
   const CORREO = process.env.CORREO_AVISOS || 'diarioinformacionespy@gmail.com'
   const pregunta = `¿Ya tiene el texto para enviarlo a ${CORREO}?`
 
@@ -50,7 +66,7 @@ export function verificarAsamblea(iso) {
 
   const minima = sumar(inicio, MIN_DIAS)
   if (asamblea < minima) {
-    return `Tenemos lugar desde el ${texto(inicio)}, así que la asamblea tendría que ser el ${texto(minima)} o después (la ley pide ${MIN_DIAS} días desde la primera publicación). ¿Podrían pasarla a esa fecha?`
+    return `Por ahora tenemos lugar desde el ${texto(inicio)}, así que la asamblea tendría que ser el ${texto(minima)} o después (la ley pide ${MIN_DIAS} días desde la primera publicación). ¿Podrían pasarla a esa fecha?`
   }
 
   // Si la asamblea está muy lejos, se empieza más tarde para no superar los 30 días de anticipación
@@ -61,9 +77,9 @@ export function verificarAsamblea(iso) {
   }
   const hasta = sumar(desde, DIAS_PUB - 1)
   if (desde > inicio) {
-    return `Para su asamblea del ${texto(asamblea)} conviene publicar del ${texto(desde)} al ${texto(hasta)}, así no pasamos los ${MAX_DIAS} días; la fecha se asegura con el pago. ${pregunta}`
+    return `Para su asamblea del ${texto(asamblea)} conviene publicar del ${texto(desde)} al ${texto(hasta)}, así no pasamos los ${MAX_DIAS} días. La fecha se asegura únicamente con el pago, por orden de llegada. ${pregunta}`
   }
-  return `Perfecto: saliendo del ${texto(desde)} al ${texto(hasta)}, su asamblea del ${texto(asamblea)} cumple los ${MIN_DIAS} días; la fecha se asegura con el pago. ${pregunta}`
+  return `Perfecto: si sale del ${texto(desde)} al ${texto(hasta)}, su asamblea del ${texto(asamblea)} cumple los ${MIN_DIAS} días. La fecha se asegura únicamente con el pago, por orden de llegada. ${pregunta}`
 }
 
 // Contexto de fechas para la IA

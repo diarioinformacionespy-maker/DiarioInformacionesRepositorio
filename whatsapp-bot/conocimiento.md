@@ -148,10 +148,10 @@ Se pide: el acta o el texto, cuántos días de publicación exige el banco, y la
 ## 6. Pagos
 
 - Transferencia bancaria:
-  - Banco GNB Paraguay
-  - Titular: Editorial Informaciones SRL
-  - Cuenta N.º: 001-083773-045
-  - Alias: RUC 80006881-5
+  - Banco: COMPLETAR
+  - Titular: COMPLETAR
+  - Cuenta N.º: COMPLETAR
+  - Alias: COMPLETAR
   - Comentario de la transferencia: el nombre de la empresa que publica el aviso.
 - Después de pagar, enviar el comprobante por este medio.
 - **La publicación se procesa cuando llega el comprobante y se confirma la acreditación.**

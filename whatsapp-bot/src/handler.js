@@ -7,10 +7,11 @@ import {
   isLidUser,
   isPnUser,
   jidNormalizedUser,
+  downloadMediaMessage,
 } from '@whiskeysockets/baileys'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import * as R from './respuestas.js'
-import { responderIA } from './ia.js'
+import { responderIA, transcribirAudio } from './ia.js'
 import { buscarEjemplares, gmailConfigurado } from './gmail.js'
 import { texto as fechaTexto, verificarAsamblea } from './fechas.js'
 
@@ -18,6 +19,7 @@ const HORAS_PAUSA = Number(process.env.HORAS_PAUSA || 12)
 const ADMIN = (process.env.ADMIN_NUMBER || '').replace(/\D/g, '')
 const ESPERA_MS = Number(process.env.ESPERA_MS ?? 5000) // junta los mensajes seguidos del cliente antes de responder
 const MAX_HISTORIAL = 30
+const MAX_AUDIO_SEG = Number(process.env.MAX_AUDIO_SEG || 300) // notas de voz de hasta 5 minutos
 const OLVIDO_MS = 48 * 3600_000 // conversación sin actividad por 48 h → se empieza de cero
 const DATA = './data/estado.json'
 
@@ -75,7 +77,7 @@ function anotar(principal, rol, texto) {
 
 function extraerTexto(message) {
   const m = normalizeMessageContent(message)
-  if (!m) return { texto: '', adjunto: false }
+  if (!m) return { texto: '', adjunto: false, audio: null }
   const texto =
     m.conversation ||
     m.extendedTextMessage?.text ||
@@ -83,8 +85,9 @@ function extraerTexto(message) {
     m.videoMessage?.caption ||
     m.documentMessage?.caption ||
     ''
-  const adjunto = Boolean(m.imageMessage || m.documentMessage || m.videoMessage || m.audioMessage)
-  return { texto: texto.trim(), adjunto }
+  const adjunto = Boolean(m.imageMessage || m.documentMessage || m.videoMessage)
+  const audio = m.audioMessage || null
+  return { texto: texto.trim(), adjunto, audio }
 }
 
 // Parte la respuesta en mensajes cortos (un párrafo por mensaje, máximo 5) para que parezca una persona escribiendo
@@ -229,7 +232,7 @@ export async function manejarMensaje(sock, msg) {
   if (!jid || !msg.message) return
   if (isJidGroup(jid) || isJidBroadcast(jid) || isJidStatusBroadcast(jid) || isJidNewsletter(jid)) return
 
-  const { texto, adjunto } = extraerTexto(msg.message)
+  let { texto, adjunto, audio } = extraerTexto(msg.message)
   const t = texto.toLowerCase()
   const { ids, principal, telefono } = await identidades(sock, msg.key)
 
@@ -245,12 +248,34 @@ export async function manejarMensaje(sock, msg) {
   }
 
   if (enPausa(ids)) {
-    if (texto) anotar(principal, 'cliente', texto)
+    if (texto || audio) anotar(principal, 'cliente', texto || '[nota de voz]')
     console.log(`← mensaje de ${telefono || principal} (chat en pausa, no responde)`)
     return
   }
 
   const nombre = msg.pushName || 'Cliente'
+
+  // Notas de voz: se transcriben con la IA y se responden como si el cliente lo hubiera escrito
+  if (audio) {
+    if ((audio.seconds || 0) > MAX_AUDIO_SEG) {
+      await escribir(sock, jid, R.AUDIO_LARGO); anotar(principal, 'cliente', '[nota de voz larga]'); anotar(principal, 'diario', R.AUDIO_LARGO)
+      return
+    }
+    let transcripcion = null
+    try {
+      await sock.sendPresenceUpdate('recording', jid).catch(() => {})
+      const buf = await downloadMediaMessage(msg, 'buffer', {}, { logger: sock.logger, reuploadRequest: sock.updateMediaMessage })
+      transcripcion = await transcribirAudio(buf, audio.mimetype)
+    } catch (e) {
+      console.error('Audio:', e.message.split('\n')[0])
+    }
+    if (!transcripcion) {
+      await escribir(sock, jid, R.AUDIO_NO); anotar(principal, 'cliente', '[nota de voz que no se pudo entender]'); anotar(principal, 'diario', R.AUDIO_NO)
+      return
+    }
+    console.log(`🎤 audio de ${telefono || principal} (${audio.seconds || '?'} s) transcripto`)
+    texto = transcripcion
+  }
 
   // Archivos (comprobantes, textos de avisos en Word/PDF/foto) → los revisa una persona
   if (adjunto) {

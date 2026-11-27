@@ -83,19 +83,13 @@ async function llamarGemini(modelo, cuerpo) {
   throw err
 }
 
-export async function responderIA(historial) {
-  if (!GEMINI_KEY) throw new Error('Falta GEMINI_API_KEY en el .env')
-  const cuerpo = JSON.stringify({
-    systemInstruction: { parts: [{ text: instrucciones() }] },
-    contents: historial.map((m) => ({ role: m.rol === 'cliente' ? 'user' : 'model', parts: [{ text: m.texto }] })),
-    generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
-  })
-  // Hasta 2 vueltas por la lista de modelos, con una pausa entre vueltas.
-  let json, ultimoError
-  for (let vuelta = 0; vuelta < 2 && !json; vuelta++) {
+// Prueba los modelos en orden (hasta 2 vueltas, con una pausa entre vueltas).
+async function llamarConRespaldo(cuerpo) {
+  let ultimoError
+  for (let vuelta = 0; vuelta < 2; vuelta++) {
     if (vuelta) await esperar(4000)
     for (const modelo of GEMINI_MODELOS) {
-      try { json = await llamarGemini(modelo, cuerpo); break } catch (err) {
+      try { return await llamarGemini(modelo, cuerpo) } catch (err) {
         let e = err
         if (e.name === 'TimeoutError' || e.name === 'AbortError' || !(e instanceof Error) || e.reintentable === undefined) {
           // tiempo agotado o error de red: se prueba el siguiente modelo
@@ -107,7 +101,36 @@ export async function responderIA(historial) {
       }
     }
   }
-  if (!json) throw ultimoError
+  throw ultimoError
+}
+
+// Transcribe una nota de voz de WhatsApp. Devuelve el texto, o null si no se entiende.
+export async function transcribirAudio(buffer, mimetype) {
+  if (!GEMINI_KEY) throw new Error('Falta GEMINI_API_KEY en el .env')
+  const cuerpo = JSON.stringify({
+    contents: [{
+      role: 'user',
+      parts: [
+        { inline_data: { mime_type: String(mimetype || 'audio/ogg').split(';')[0].trim(), data: buffer.toString('base64') } },
+        { text: 'Transcribí textualmente esta nota de voz de WhatsApp (español de Paraguay; puede tener palabras en guaraní). Devolvé SOLO la transcripción, sin comillas ni comentarios. Si no se entiende nada o no hay voz, devolvé exactamente: [INAUDIBLE]' },
+      ],
+    }],
+    generationConfig: { temperature: 0, maxOutputTokens: 2048 },
+  })
+  const json = await llamarConRespaldo(cuerpo)
+  const t = json.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim()
+  if (!t || t.includes('[INAUDIBLE]')) return null
+  return t
+}
+
+export async function responderIA(historial) {
+  if (!GEMINI_KEY) throw new Error('Falta GEMINI_API_KEY en el .env')
+  const cuerpo = JSON.stringify({
+    systemInstruction: { parts: [{ text: instrucciones() }] },
+    contents: historial.map((m) => ({ role: m.rol === 'cliente' ? 'user' : 'model', parts: [{ text: m.texto }] })),
+    generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
+  })
+  const json = await llamarConRespaldo(cuerpo)
   const texto = json.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim()
   if (!texto) throw new Error('Gemini no devolvió texto: ' + JSON.stringify(json).slice(0, 300))
   const derivar = texto.includes(MARCA_DERIVAR)

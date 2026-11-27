@@ -8,3 +8,7 @@ Para que el equipo revise el texto y le pase el presupuesto exacto, por favor en
 Por WhatsApp solo podemos darle un estimativo.`
 
 export const ERROR_IA = `Gracias por su mensaje. En breve le responderá alguien del equipo.`
+
+export const AUDIO_NO = `Disculpe, no pude escuchar bien su audio. ¿Me lo podría escribir?`
+
+export const AUDIO_LARGO = `Su audio es un poco largo para este medio. ¿Me podría escribir su consulta en un mensaje? Si es el texto de un aviso, envíelo por correo a diarioinformacionespy@gmail.com.`

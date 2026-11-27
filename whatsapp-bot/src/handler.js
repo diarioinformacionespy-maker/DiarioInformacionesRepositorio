@@ -14,7 +14,7 @@ import { etiquetar, quitarEtiqueta } from './etiquetas.js'
 import * as R from './respuestas.js'
 import { responderIA, transcribirAudio } from './ia.js'
 import { buscarEjemplares, gmailConfigurado } from './gmail.js'
-import { texto as fechaTexto, verificarAsamblea } from './fechas.js'
+import { texto as fechaTexto, verificarAsamblea, ahora } from './fechas.js'
 
 const HORAS_PAUSA = Number(process.env.HORAS_PAUSA || 12)
 const ADMIN = (process.env.ADMIN_NUMBER || '').replace(/\D/g, '')
@@ -23,6 +23,7 @@ const MAX_HISTORIAL = 30
 const MAX_AUDIO_SEG = Number(process.env.MAX_AUDIO_SEG || 300) // notas de voz de hasta 5 minutos
 const OLVIDO_MS = 48 * 3600_000 // conversación sin actividad por 48 h → se empieza de cero
 const DATA = './data/estado.json'
+const SEGUIMIENTO_MIN = Number(process.env.SEGUIMIENTO_MIN ?? 30) // si el cliente no contesta en este tiempo, se le insiste UNA vez (0 = nunca)
 
 // ---------- estado persistente (pausas y conversaciones por chat) ----------
 mkdirSync('./data', { recursive: true })
@@ -70,6 +71,7 @@ function anotar(principal, rol, texto) {
   const ult = c.msgs.at(-1)
   if (ult && ult.rol === rol) ult.texto += '\n' + texto // la IA espera turnos alternados
   else c.msgs.push({ rol, texto })
+  if (rol === 'cliente') delete c.insistido
   c.msgs = c.msgs.slice(-MAX_HISTORIAL)
   while (c.msgs.length && c.msgs[0].rol !== 'cliente') c.msgs.shift()
   c.t = Date.now()
@@ -144,6 +146,7 @@ async function avisarAdmin(sock, texto) {
 const pendientes = new Map() // principal → { timer, jid, ids, nombre, telefono }
 
 function programarRespuesta(sock, datos) {
+  clearTimeout(seguimientos.get(datos.principal)) // el cliente escribió: no hace falta insistir
   const previo = pendientes.get(datos.principal)
   if (previo) clearTimeout(previo.timer)
   const timer = setTimeout(() => {
@@ -184,7 +187,37 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
     await avisarAdmin(sock, `🙋 Para atender: ${contacto(nombre, telefono)}\nÚltimo mensaje: "${ultimo.slice(0, 300)}"`)
     await etiquetar(sock, jid)
     pausar(ids)
+    return
   }
+  programarSeguimiento(sock, { jid, ids, principal })
+}
+
+// ---------- seguimiento: si el cliente se queda callado, se le insiste una sola vez ----------
+const seguimientos = new Map() // principal → timer
+
+function programarSeguimiento(sock, datos) {
+  clearTimeout(seguimientos.get(datos.principal))
+  if (!SEGUIMIENTO_MIN || historial(datos.principal).insistido) return
+  const timer = setTimeout(() => insistir(sock, datos).catch((e) => console.error('Seguimiento:', e.message)), SEGUIMIENTO_MIN * 60_000)
+  seguimientos.set(datos.principal, timer)
+}
+
+async function insistir(sock, { jid, ids, principal }) {
+  seguimientos.delete(principal)
+  const c = estado.chats[principal]
+  if (!c || c.insistido || enPausa(ids) || c.msgs.at(-1)?.rol !== 'diario') return
+  const { hora } = ahora()
+  if (hora < 7 || hora >= 21) return // de noche no se molesta al cliente
+  const nuestros = c.msgs.filter((m) => m.rol === 'diario').map((m) => m.texto).join('\n')
+  const trato = nuestros.match(/\b(Sra?)\.\s+([A-ZÁÉÍÓÚÑ][\p{L}]+)/u)
+  const correo = nuestros.includes(process.env.CORREO_AVISOS || 'diarioinformacionespy@gmail.com')
+  let t = 'Necesitaría alguna otra información para poder guiarle o ayudarle?'
+  if (correo) t += ` Voy a estar atento a su correo${trato ? `, ${trato[1]}. ${trato[2]}` : ''}.`
+  await escribir(sock, jid, t)
+  anotar(principal, 'diario', t)
+  c.insistido = true
+  guardar()
+  console.log(`↻ seguimiento enviado a ${principal}`)
 }
 
 // ---------- ejemplares: busca en Gmail los PDF web donde salió el aviso y los envía ----------

@@ -177,6 +177,7 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
     await escribir(sock, jid, r.texto)
     anotar(principal, 'diario', r.texto)
   }
+  if (r.ubicacion) await enviarUbicacion(sock, jid)
   if (r.asamblea) {
     const t = verificarAsamblea(r.asamblea)
     if (t) { await escribir(sock, jid, t); anotar(principal, 'diario', t) }
@@ -190,6 +191,17 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
     return
   }
   programarSeguimiento(sock, { jid, ids, principal })
+}
+
+// ---------- ubicación del diario (coordenadas en .env: UBICACION_LAT y UBICACION_LNG) ----------
+async function enviarUbicacion(sock, jid) {
+  const lat = Number(process.env.UBICACION_LAT), lng = Number(process.env.UBICACION_LNG)
+  if (!lat || !lng) return // sin coordenadas cargadas, alcanza con la dirección escrita
+  await sock.sendMessage(jid, { location: {
+    degreesLatitude: lat, degreesLongitude: lng,
+    name: 'Diario Informaciones',
+    address: 'República de Colombia 1136 casi Brasil, Asunción',
+  } }).catch((e) => console.error('Ubicación:', e.message))
 }
 
 // ---------- seguimiento: si el cliente se queda callado, se le insiste una sola vez ----------

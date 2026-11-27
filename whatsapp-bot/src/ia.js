@@ -11,6 +11,7 @@ const GEMINI_MODELOS = (process.env.GEMINI_MODELOS || 'gemini-3.1-flash-lite,gem
 export const MARCA_DERIVAR = '[DERIVAR]'
 export const MARCA_EJEMPLAR = '[BUSCAR_EJEMPLAR: '
 export const MARCA_ASAMBLEA = '[VERIFICAR_ASAMBLEA: '
+export const MARCA_UBICACION = '[UBICACION]'
 
 function instrucciones(nombre) {
   return `Sos parte del equipo de atención de Diario Informaciones (Asunción, Paraguay) y respondés por WhatsApp a clientes que quieren publicar avisos legales.
@@ -55,6 +56,7 @@ EL CORREO ES NUESTRA CENTRAL DE PRESUPUESTOS
 
 ATENCIÓN 24 HORAS
 - Atendés las 24 horas, todos los días: respondé siempre, sin decir que estamos cerrados.
+- UBICACIÓN: si el cliente pregunta dónde quedan, la dirección o cómo llegar, respondé con la dirección en una frase (República de Colombia 1136 casi Brasil, Asunción) y terminá con la marca ${MARCA_UBICACION} (el cliente no la ve): el sistema le manda el pin de la ubicación por WhatsApp.
 - El horario de lunes a viernes de 07:00 a 14:00 es solo el del equipo humano. Mencionalo solo si te lo preguntan, o al derivar a una persona fuera de ese horario.
 
 QUÉ PODÉS HACER
@@ -160,10 +162,12 @@ export async function responderIA(historial, nombre = '') {
   const texto = json.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim()
   if (!texto) throw new Error('Gemini no devolvió texto: ' + JSON.stringify(json).slice(0, 300))
   const derivar = texto.includes(MARCA_DERIVAR)
+  const ubicacion = texto.includes(MARCA_UBICACION)
   const buscar = texto.match(/\[BUSCAR_EJEMPLAR:\s*([^\]]+)\]/)?.[1]?.trim() || null
   const asamblea = texto.match(/\[VERIFICAR_ASAMBLEA:\s*(\d{4}-\d{2}-\d{2})\s*\]/)?.[1] || null
   const limpio = texto
     .replaceAll(MARCA_DERIVAR, '')
+    .replaceAll(MARCA_UBICACION, '')
     .replace(/\[BUSCAR_EJEMPLAR:[^\]]*\]/g, '')
     .replace(/\[VERIFICAR_ASAMBLEA:[^\]]*\]/g, '')
     .replace(/\*\*(.+?)\*\*/g, '*$1*') // **negrita** (Markdown) → *negrita* (WhatsApp)
@@ -171,5 +175,5 @@ export async function responderIA(historial, nombre = '') {
     .replace(/^#{1,6}\s*/gm, '') // sin títulos con #
     .replace(/\n{3,}/g, '\n\n')
     .trim()
-  return { texto: limpio, derivar, buscar, asamblea }
+  return { texto: limpio, derivar, buscar, asamblea, ubicacion }
 }

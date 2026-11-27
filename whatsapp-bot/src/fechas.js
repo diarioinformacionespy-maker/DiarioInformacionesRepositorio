@@ -66,7 +66,7 @@ export function verificarAsamblea(iso) {
 
   const minima = sumar(inicio, MIN_DIAS)
   if (asamblea < minima) {
-    return `Por ahora tenemos lugar desde el ${texto(inicio)}, así que la asamblea tendría que ser el ${texto(minima)} o después (la ley pide ${MIN_DIAS} días desde la primera publicación). ¿Podrían pasarla a esa fecha?`
+    return `Contamos con disponibilidad a partir del ${texto(inicio)}, así que su asamblea tendría que ser el ${texto(minima)} o después, para cumplir los ${MIN_DIAS} días de anticipación (Art. 1082 del Código Civil). Podrían pasarla a esa fecha?`
   }
 
   // Si la asamblea está muy lejos, se empieza más tarde para no superar los 30 días de anticipación
@@ -77,9 +77,9 @@ export function verificarAsamblea(iso) {
   }
   const hasta = sumar(desde, DIAS_PUB - 1)
   if (desde > inicio) {
-    return `Para su asamblea del ${texto(asamblea)} conviene publicar del ${texto(desde)} al ${texto(hasta)}, así no pasamos los ${MAX_DIAS} días. La fecha se asegura únicamente con el pago, por orden de llegada. ${pregunta}`
+    return `Para su asamblea del ${texto(asamblea)}, la fecha tentativa sería del ${texto(desde)} al ${texto(hasta)} (${DIAS_PUB} días), así no superamos los ${MAX_DIAS} días de anticipación. Únicamente podremos confirmarle una fecha una vez que nos envíe su comprobante de pago. ${pregunta}`
   }
-  return `Perfecto: si sale del ${texto(desde)} al ${texto(hasta)}, su asamblea del ${texto(asamblea)} cumple los ${MIN_DIAS} días. La fecha se asegura únicamente con el pago, por orden de llegada. ${pregunta}`
+  return `Perfecto. Fecha tentativa: del ${texto(desde)} al ${texto(hasta)} (${DIAS_PUB} días); su asamblea del ${texto(asamblea)} cumple los ${MIN_DIAS} días de anticipación (Art. 1082 del Código Civil). Únicamente podremos confirmarle una fecha una vez que nos envíe su comprobante de pago. ${pregunta}`
 }
 
 // Contexto de fechas para la IA
@@ -114,7 +114,7 @@ export function verificarDia(iso) {
   if (!m) return null
   const pedido = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
   const CORREO = process.env.CORREO_AVISOS || 'diarioinformacionespy@gmail.com'
-  const cierre = `El lugar se asegura únicamente con el pago, por orden de llegada. Para cotizarlo, envíe el texto de su aviso a nuestro correo oficial, ${CORREO}, con el nombre de la empresa, su RUC y un teléfono de contacto.`
+  const cierre = `La fecha se asegura únicamente con el pago, por orden de llegada. Para cotizarlo, envíe el texto de su aviso a nuestro correo oficial, ${CORREO}, con el nombre de la empresa, su RUC y un teléfono de contacto.`
   const inicio = proximoInicio()
   const pool = leerPool()
   const libre = (d) => !pool || !['cerrado'].includes(pool[isoDe(d)])
@@ -123,11 +123,11 @@ export function verificarDia(iso) {
 
   if (pedido < inicio || !puedeIniciar(pedido)) {
     const motivo = pedido.getUTCDay() === 0 ? 'Los domingos no sale el diario' : `Para el ${texto(pedido)} ya no llegamos a tomar avisos nuevos`
-    return `${motivo}. Lo más pronto posible por ahora sería el ${texto(primero)}, sujeto a disponibilidad. ${cierre}`
+    return `${motivo}. Contamos con disponibilidad a partir del ${texto(primero)}. ${cierre}`
   }
-  if (!pool) return `La disponibilidad del ${texto(pedido)} la confirma el equipo por correo. ${cierre}`
+  if (!pool) return `La disponibilidad del ${texto(pedido)} se la confirmamos por correo. ${cierre}`
   const est = pool[isoDe(pedido)] || 'abierto'
-  if (est === 'cerrado') return `El ${texto(pedido)} ya está completo. Lo más pronto disponible por ahora es el ${texto(primero)}, sujeto a disponibilidad. ${cierre}`
+  if (est === 'cerrado') return `El ${texto(pedido)} ya no tenemos lugar. Contamos con disponibilidad a partir del ${texto(primero)}. ${cierre}`
   if (est === 'lleno' || est === 'casi') return `El ${texto(pedido)} ya está casi completo, así que no podemos garantizarle el lugar. ${cierre}`
-  return `Por ahora el ${texto(pedido)} todavía tiene espacio, pero no podemos garantizarlo hasta recibir el pago. ${cierre}`
+  return `Por ahora contamos con disponibilidad para el ${texto(pedido)}. ${cierre}`
 }

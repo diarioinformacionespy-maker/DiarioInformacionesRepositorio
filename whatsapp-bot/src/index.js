@@ -13,6 +13,7 @@ import { manejarMensaje, registrarEnviado } from './handler.js'
 const AUTH_DIR = process.env.AUTH_DIR || './auth'
 const PAIRING_NUMBER = (process.env.PAIRING_NUMBER || '').replace(/\D/g, '')
 import { crearEtiquetas } from './etiquetas.js'
+import { iniciarPool } from './pool.js'
 const logger = pino({ level: process.env.LOG_LEVEL || 'warn' })
 
 let reintentos = 0
@@ -55,6 +56,7 @@ async function iniciar() {
       reintentos = 0
       console.log(`✅ Conectado como ${sock.user?.id}`)
       setTimeout(() => crearEtiquetas(sock), 10000) // cuando terminó de sincronizar
+      iniciarPool()
     }
 
     if (connection === 'close') {

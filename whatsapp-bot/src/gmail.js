@@ -10,7 +10,10 @@ import { join } from 'node:path'
 const DIR = process.env.GOOGLE_DIR || './google'
 const DESTINO_WEB = process.env.EJEMPLARES_DESTINO || 'nelpa90@gmail.com'
 const DIAS_BUSQUEDA = Number(process.env.EJEMPLARES_DIAS || 180)
-export const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+export const SCOPES = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/drive.readonly', // para leer el estado del Pool (pool_estado_bot.json)
+]
 
 function cliente() {
   const c = JSON.parse(readFileSync(join(DIR, 'credentials.json'), 'utf8'))
@@ -18,7 +21,7 @@ function cliente() {
 }
 
 let cache = { token: null, vence: 0 }
-async function accessToken() {
+export async function accessToken() {
   if (cache.token && Date.now() < cache.vence - 60_000) return cache.token
   const { client_id, client_secret } = cliente()
   const { refresh_token } = JSON.parse(readFileSync(join(DIR, 'token.json'), 'utf8'))

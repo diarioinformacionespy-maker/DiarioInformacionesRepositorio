@@ -10,6 +10,7 @@ import {
   downloadMediaMessage,
 } from '@whiskeysockets/baileys'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { etiquetar, quitarEtiqueta } from './etiquetas.js'
 import * as R from './respuestas.js'
 import { responderIA, transcribirAudio } from './ia.js'
 import { buscarEjemplares, gmailConfigurado } from './gmail.js'
@@ -181,6 +182,7 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
   if (r.derivar) {
     const ultimo = [...c.msgs].reverse().find((m) => m.rol === 'cliente')?.texto || ''
     await avisarAdmin(sock, `🙋 Para atender: ${contacto(nombre, telefono)}\nÚltimo mensaje: "${ultimo.slice(0, 300)}"`)
+    await etiquetar(sock, jid)
     pausar(ids)
   }
 }
@@ -195,6 +197,7 @@ async function enviarEjemplares(sock, { jid, ids, principal, nombre, telefono },
     const t = `En breve le remitimos las ediciones por este medio.\n\nTambién puede descargarlas desde nuestra página web, en la sección ARCHIVO, eligiendo la fecha en el calendario: ${ARCHIVO_WEB}`
     await escribir(sock, jid, t); anotar(principal, 'diario', t)
     await avisarAdmin(sock, `📰 Pide ejemplares de "${buscado}": ${quien}\n(El bot todavía no tiene acceso al Gmail para buscarlos.)`)
+    await etiquetar(sock, jid)
     pausar(ids)
     return
   }
@@ -205,6 +208,7 @@ async function enviarEjemplares(sock, { jid, ids, principal, nombre, telefono },
     console.error('Ejemplares:', e.message)
     await escribir(sock, jid, R.ERROR_IA); anotar(principal, 'diario', R.ERROR_IA)
     await avisarAdmin(sock, `📰 No se pudieron buscar los ejemplares de "${buscado}" (error: ${e.message.slice(0, 120)}): ${quien}`)
+    await etiquetar(sock, jid)
     pausar(ids)
     return
   }
@@ -217,6 +221,7 @@ async function enviarEjemplares(sock, { jid, ids, principal, nombre, telefono },
       const t = `No logro ubicarla por acá; ya le paso su pedido al equipo para que le envíe las ediciones.`
       await escribir(sock, jid, t); anotar(principal, 'diario', t)
       await avisarAdmin(sock, `📰 No encontré ejemplares de "${buscado}" (2 intentos): ${quien}`)
+      await etiquetar(sock, jid)
       pausar(ids)
     } else {
       const t = `No encontré publicaciones con el nombre "${buscado}". ¿Me confirma el nombre exacto como figura en el aviso?`
@@ -252,7 +257,7 @@ export async function manejarMensaje(sock, msg) {
   if (msg.key.fromMe) {
     if (enviadosPorBot.has(msg.key.id)) return // los mandó el bot
     // Lo escribió una persona desde el celular/WhatsApp Web:
-    if (t === '#bot') { reanudar(ids); return } // reactivar el bot en este chat
+    if (t === '#bot') { reanudar(ids); await quitarEtiqueta(sock, jid); return } // reactivar el bot en este chat
     if (t === '#pausa') { pausar(ids, 24 * 365); return } // pausar indefinidamente
     if (texto) anotar(principal, 'diario', texto) // así la IA sabe lo que respondió el equipo
     pausar(ids) // un humano tomó la conversación → el bot se calla HORAS_PAUSA horas
@@ -296,6 +301,7 @@ export async function manejarMensaje(sock, msg) {
     await escribir(sock, jid, R.RECIBIDO, msg)
     anotar(principal, 'diario', R.RECIBIDO)
     await avisarAdmin(sock, `📎 Envió un archivo: ${contacto(nombre, telefono)}`)
+    await etiquetar(sock, jid)
     pausar(ids)
     return
   }

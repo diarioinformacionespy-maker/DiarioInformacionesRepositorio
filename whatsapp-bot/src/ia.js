@@ -12,6 +12,7 @@ export const MARCA_DERIVAR = '[DERIVAR]'
 export const MARCA_EJEMPLAR = '[BUSCAR_EJEMPLAR: '
 export const MARCA_ASAMBLEA = '[VERIFICAR_ASAMBLEA: '
 export const MARCA_UBICACION = '[UBICACION]'
+export const MARCA_DIA = '[VER_DIA: '
 
 function instrucciones(nombre) {
   return `Sos parte del equipo de atención de Diario Informaciones (Asunción, Paraguay) y respondés por WhatsApp a clientes que quieren publicar avisos legales.
@@ -66,7 +67,12 @@ QUÉ PODÉS HACER
 
 LO QUE NUNCA HACÉS
 - Confirmar pagos, confirmar fechas definitivas, inventar precios o recargos, hacer descuentos, prometer horarios de corte.
+- PROMETER CUALQUIER COSA: nunca le asegures al cliente una fecha, un lugar, un precio ni un plazo. Todo es tentativo hasta que el equipo lo confirme por correo y el cliente pague. La prioridad SIEMPRE es que envíe su aviso por correo.
 - Responder sobre algo que no esté en la información de abajo: en ese caso, derivá.
+
+DÍA QUE PIDE EL CLIENTE ("quiero que salga mañana", "puede salir el lunes?")
+- Cuando el cliente pide que su aviso salga un día concreto, NO le digas vos si hay lugar: respondé solo "Déjeme verificar." y terminá con la marca ${MARCA_DIA}aaaa-mm-dd] con ese día (usá FECHAS para saber qué fecha es "mañana" o "el lunes"). El sistema revisa el Pool de espacios y le responde, siempre aclarando que el lugar se asegura solo con el pago y que la cotización se hace por correo.
+- Si además es una asamblea y ya te dio la fecha de la asamblea, usá la marca de la asamblea (abajo) en lugar de esta.
 
 FECHA DE LA ASAMBLEA (verificación de los 10 días)
 - Cuando el cliente quiere publicar una convocatoria a asamblea y todavía no dijo para qué fecha es, preguntale: "¿Para qué fecha es su asamblea?".
@@ -164,16 +170,18 @@ export async function responderIA(historial, nombre = '') {
   const derivar = texto.includes(MARCA_DERIVAR)
   const ubicacion = texto.includes(MARCA_UBICACION)
   const buscar = texto.match(/\[BUSCAR_EJEMPLAR:\s*([^\]]+)\]/)?.[1]?.trim() || null
+  const dia = texto.match(/\[VER_DIA:\s*(\d{4}-\d{2}-\d{2})\s*\]/)?.[1] || null
   const asamblea = texto.match(/\[VERIFICAR_ASAMBLEA:\s*(\d{4}-\d{2}-\d{2})\s*\]/)?.[1] || null
   const limpio = texto
     .replaceAll(MARCA_DERIVAR, '')
     .replaceAll(MARCA_UBICACION, '')
     .replace(/\[BUSCAR_EJEMPLAR:[^\]]*\]/g, '')
     .replace(/\[VERIFICAR_ASAMBLEA:[^\]]*\]/g, '')
+    .replace(/\[VER_DIA:[^\]]*\]/g, '')
     .replace(/\*\*(.+?)\*\*/g, '*$1*') // **negrita** (Markdown) → *negrita* (WhatsApp)
     .replace(/[*_]+(\S+@\S+\.\w+|https?:\/\/\S+?)[*_]+/g, '$1') // correos y enlaces sin negrita (si no, el enlace se rompe)
     .replace(/^#{1,6}\s*/gm, '') // sin títulos con #
     .replace(/\n{3,}/g, '\n\n')
     .trim()
-  return { texto: limpio, derivar, buscar, asamblea, ubicacion }
+  return { texto: limpio, derivar, buscar, asamblea, ubicacion, dia }
 }

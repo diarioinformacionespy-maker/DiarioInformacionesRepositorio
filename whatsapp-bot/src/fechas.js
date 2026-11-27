@@ -78,3 +78,40 @@ export function contextoFechas() {
     `Una asamblea de 5 días que empiece ese día se publica del ${texto(inicio)} al ${texto(fin5)}, y la asamblea tiene que ser el ${texto(asambleaMin)} o después (10 días desde la primera publicación).`,
   ].join('\n')
 }
+
+// ---------- día que pide el cliente, contra el Pool de espacios ----------
+// El estado del Pool lo deja data/pool.json: { "actualizado": ISO, "dias": { "aaaa-mm-dd": "abierto"|"casi"|"lleno"|"cerrado" } }
+// Si el archivo no está o tiene más de POOL_MAX_MIN minutos, el bot NO dice si hay lugar: lo deja al equipo.
+import { readFileSync } from 'node:fs'
+const POOL_MAX_MIN = Number(process.env.POOL_MAX_MIN || 40)
+function leerPool() {
+  try {
+    const p = JSON.parse(readFileSync('./data/pool.json', 'utf8'))
+    if (Date.now() - new Date(p.actualizado).getTime() > POOL_MAX_MIN * 60_000) return null
+    return p.dias || null
+  } catch { return null }
+}
+const isoDe = (d) => d.toISOString().slice(0, 10)
+
+export function verificarDia(iso) {
+  const m = String(iso).match(/(\d{4})-(\d{2})-(\d{2})/)
+  if (!m) return null
+  const pedido = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
+  const CORREO = process.env.CORREO_AVISOS || 'diarioinformacionespy@gmail.com'
+  const cierre = `El lugar se asegura únicamente con el pago, por orden de llegada. Para cotizarlo, envíe el texto de su aviso a nuestro correo oficial, ${CORREO}, con el nombre de la empresa, su RUC y un teléfono de contacto.`
+  const inicio = proximoInicio()
+  const pool = leerPool()
+  const libre = (d) => !pool || !['cerrado'].includes(pool[isoDe(d)])
+  let primero = pedido > inicio ? pedido : inicio
+  for (let i = 0; i < 60 && !(puedeIniciar(primero) && libre(primero)); i++) primero = sumar(primero, 1)
+
+  if (pedido < inicio || !puedeIniciar(pedido)) {
+    const motivo = pedido.getUTCDay() === 0 ? 'Los domingos no sale el diario' : `Para el ${texto(pedido)} ya no llegamos a tomar avisos nuevos`
+    return `${motivo}. Lo más pronto posible por ahora sería el ${texto(primero)}, sujeto a disponibilidad. ${cierre}`
+  }
+  if (!pool) return `La disponibilidad del ${texto(pedido)} la confirma el equipo por correo. ${cierre}`
+  const est = pool[isoDe(pedido)] || 'abierto'
+  if (est === 'cerrado') return `El ${texto(pedido)} ya está completo. Lo más pronto disponible por ahora es el ${texto(primero)}, sujeto a disponibilidad. ${cierre}`
+  if (est === 'lleno' || est === 'casi') return `El ${texto(pedido)} ya está casi completo, así que no podemos garantizarle el lugar. ${cierre}`
+  return `Por ahora el ${texto(pedido)} todavía tiene espacio, pero no podemos garantizarlo hasta recibir el pago. ${cierre}`
+}

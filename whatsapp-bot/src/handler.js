@@ -14,7 +14,7 @@ import { etiquetar, quitarEtiqueta } from './etiquetas.js'
 import * as R from './respuestas.js'
 import { responderIA, transcribirAudio } from './ia.js'
 import { buscarEjemplares, gmailConfigurado } from './gmail.js'
-import { texto as fechaTexto, verificarAsamblea, ahora } from './fechas.js'
+import { texto as fechaTexto, verificarAsamblea, verificarDia, ahora } from './fechas.js'
 
 const HORAS_PAUSA = Number(process.env.HORAS_PAUSA ?? 12)
 const ADMIN = (process.env.ADMIN_NUMBER || '').replace(/\D/g, '')
@@ -178,6 +178,10 @@ async function contestar(sock, { jid, ids, principal, nombre, telefono }) {
     anotar(principal, 'diario', r.texto)
   }
   if (r.ubicacion) await enviarUbicacion(sock, jid)
+  if (r.dia) {
+    const t = verificarDia(r.dia)
+    if (t) { await escribir(sock, jid, t); anotar(principal, 'diario', t) }
+  }
   if (r.asamblea) {
     const t = verificarAsamblea(r.asamblea)
     if (t) { await escribir(sock, jid, t); anotar(principal, 'diario', t) }
